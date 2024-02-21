@@ -1,0 +1,22 @@
+version: 2
+
+jobs:
+  build:
+    docker:
+      - image: "cimg/base:current"
+    steps:
+      - checkout
+      - setup_remote_docker
+      - restore_cache:
+          keys:
+            - v1-{{ .Branch }}
+          paths:
+            - /caches/app.tar        
+      - run:
+          name: Build and Push Docker image
+          command: |
+            GIT_REV=`git rev-parse HEAD`
+            docker build --progress=plain -t ${DOCKER_USERNAME}/dtoo-prep:${GIT_REV} -t ${DOCKER_USERNAME}/dtoo-prep:latest .
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+            docker push --all-tags ${DOCKER_USERNAME}/dtoo-prep
+

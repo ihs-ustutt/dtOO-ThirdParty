@@ -1,0 +1,338 @@
+#!/bin/bash
+
+_skipBuild=0
+_skipDownload=0
+
+usage() { 
+  echo "$0 usage:" && grep " .)\ #" $0
+  exit 0
+}
+
+git_cmake_build() {
+  local _name=$1
+  local _cloneCommand=$2
+  local _checkoutCommand=$3
+  local _cmakeConf=$4
+
+  echo "# Process $_name ..."
+  if [[ "$_dep" == "$_name" || "$_dep" == "all" ]]; then
+    echo "#   ( L ) _name            : $_name"
+    echo "#   ( G ) _dep             : $_dep"
+    echo "#   ( G ) _skipBuild       : $_skipBuild"
+    echo "#   ( G ) _skipDownload    : $_skipDownload"
+    echo "#   ( L ) _checkoutCommand : $_checkoutCommand"
+    echo "#   ( L ) _cmakeConf       : $_cmakeConf"
+  
+    cd $_pwd
+    if [[ "$_skipDownload" == "0" ]]; then
+      rm -rf ${_pwd}/${_name}
+      git clone $_cloneCommand $_name
+      if [ ! -z "$_checkoutCommand" ]; then
+        cd ${_pwd}/${_name}
+        git checkout $_checkoutCommand
+        if [ -f "${_patch}/${_name}.${_checkoutCommand}" ]; then
+          echo "#     > Apply Patch ${_name}.${_checkoutCommand}"
+          git apply ${_patch}/${_name}.${_checkoutCommand}
+        fi
+      fi
+    fi
+    mkdir -p ${_pwd}/build_$_name
+    if [[ "$_skipBuild" == "0" ]]; then
+      rm -rf ${_pwd}/build_$_name/*
+      cd ${_pwd}/build_$_name
+      cmake $_cmakeConf ../$_name
+      make -j${_nProcs}
+    fi
+    cd ${_pwd}/build_$_name
+    make -j${_nProcs} install
+  else
+    echo "#   ...skip"
+  fi
+}
+
+git_nobuild() {
+  local _name=$1
+  local _cloneCommand=$2
+  local _checkoutCommand=$3
+
+  echo "# Process $_name ..."
+  if [[ "$_dep" == "$_name" || "$_dep" == "all" ]]; then
+    echo "#   ( L ) _name            : $_name"
+    echo "#   ( G ) _dep             : $_dep"
+    echo "#   ( G ) _skipBuild       : $_skipBuild"
+    echo "#   ( G ) _skipDownload    : $_skipDownload"
+    echo "#   ( L ) _checkoutCommand : $_checkoutCommand"
+  
+    cd $_pwd
+    if [[ "$_skipDownload" == "0" ]]; then
+      rm -rf ${_pwd}/${_name}
+      git clone $_cloneCommand $_name
+      if [ ! -z "$_checkoutCommand" ]; then
+        cd ${_pwd}/${_name}
+        git checkout $_checkoutCommand
+        if [ -f "${_patch}/${_name}.${_checkoutCommand}" ]; then
+          echo "#     > Apply Patch ${_name}.${_checkoutCommand}"
+          git apply ${_patch}/${_name}.${_checkoutCommand}
+        fi
+      fi
+    fi
+  else
+    echo "#   ...skip"
+  fi
+}
+
+[ $# -eq 0 ] && usage
+while getopts ":i:n:ho:bd" opt; do
+  case ${opt} in
+    h) # Display help
+      usage
+      ;;
+    i) # Specify the prefix for install (_installPrefix)
+      _installPrefix=${OPTARG}
+      if [[ "$_installPrefix" != /* ]]; then
+        echo "Please specify relative path starting with /"
+        exit 0
+      fi
+      ;;
+    n) # Specify the number of build processes (_nProcs)
+      _nProcs=$OPTARG
+      ;;
+    o) # Build [ all ] or only one dependency [ cgns lapack mpfr openmesh openvolumemesh occt pythonocc-core gmsh moab cgal muparser root nlohmann_json]
+      _dep=$OPTARG
+      ;;
+    b) # Skip build
+      _skipBuild=1
+      ;;
+    d) # Skip download
+      _skipDownload=1
+      ;;
+    \?)
+      echo "Invalid option: $OPTARG" 1>&2
+      exit
+      ;;
+    :)
+      echo "Option ${OPTARG} requires an argument" 1>&2
+      exit
+      ;;
+  esac
+done
+shift $((OPTIND -1))
+
+echo "#"
+echo "# _installPrefix=${_installPrefix}"
+echo "# _nProcs=${_nProcs}"
+echo "# _dep=${_dep}"
+echo "# _skipBuild=${_skipBuild}"
+echo "# _skipDownload=${_skipDownload}"
+echo "#"
+
+# create directory
+mkdir -p ThirdParty
+_patch=`pwd`
+_patch=${_patch}/ThirdParty.patch
+cd ThirdParty
+_pwd=`pwd`
+
+#-------------------------------------------------------------------------------
+# cgns
+#-------------------------------------------------------------------------------
+git_cmake_build \
+  "cgns" \
+  "https://github.com/CGNS/CGNS" \
+  "" \
+  "\
+  -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
+  -DCGNS_USE_SHARED=ON \
+  -DCGNS_ENABLE_SCOPING=OFF \
+  -DCGNS_ENABLE_HDF5=OFF \
+  -DCGNS_ENABLE_64BIT=ON \
+  "
+#-------------------------------------------------------------------------------
+# lapack
+#-------------------------------------------------------------------------------
+git_cmake_build \
+  "lapack" \
+  "https://github.com/Reference-LAPACK/lapack" \
+  "v3.11.0" \
+  "\
+  -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
+  -DCBLAS=ON \
+  -DBUILD_SHARED_LIBS=ON\
+  "
+
+#-------------------------------------------------------------------------------
+# mpfr
+#-------------------------------------------------------------------------------
+echo "# Build mpfr ..."
+if [[ "$_dep" == "mpfr" || "$_dep" == "all" ]]; then
+  cd $_pwd
+  if [[ "$_skipDownload" == "0" ]]; then
+    rm -rf ${_pwd}/mpfr-4.1.0
+    rm -rf ${_pwd}/mpfr-4.1.0.tar.xz
+    #curl -o mpfr-4.1.0.tar.xz https://www.mpfr.org/mpfr-current/mpfr-4.1.0.tar.xz
+    curl -o mpfr-4.1.0.tar.xz https://toolchains.bootlin.com/downloads/releases/sources/mpfr-4.1.0/mpfr-4.1.0.tar.xz
+    tar xvf mpfr-4.1.0.tar.xz
+  fi
+  if [[ "$_skipBuild" == "0" ]]; then
+    cd ${_pwd}/mpfr-4.1.0
+    ./configure \
+      --prefix=${_installPrefix}
+    make -j${_nProcs} install
+  fi
+else
+  echo "# ...skip"
+fi
+
+#-------------------------------------------------------------------------------
+# OpenMesh
+#-------------------------------------------------------------------------------
+git_cmake_build \
+  "openmesh" \
+  "https://gitlab.vci.rwth-aachen.de:9000/OpenMesh/OpenMesh.git" \
+  "OpenMesh-8.1" \
+  "-DCMAKE_INSTALL_PREFIX=${_installPrefix}"
+  
+#-------------------------------------------------------------------------------
+# OpenVolumeMesh
+#-------------------------------------------------------------------------------
+git_cmake_build \
+  "openvolumemesh" \
+  "https://github.com/nTopology/OpenVolumeMesh.git" \
+  "" \
+  "\
+  -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
+  -DCMAKE_BUILD_TYPE=Release \
+  "
+  
+#-------------------------------------------------------------------------------
+# occt
+#-------------------------------------------------------------------------------
+git_cmake_build \
+  "occt" \
+  "https://git.dev.opencascade.org/repos/occt.git" \
+  "V7_5_1" \
+  "\
+    -DINSTALL_DIR=${_installPrefix} \
+    -DBUILD_RELEASE_DISABLE_EXCEPTIONS=FALSE \
+  "
+  
+#-------------------------------------------------------------------------------
+# pythonocc-core
+#-------------------------------------------------------------------------------
+git_cmake_build \
+  "pythonocc-core" \
+  "https://github.com/tpaviot/pythonocc-core.git" \
+  "7.5.1" \
+  "\
+    -DOCE_INCLUDE_PATH=${_installPrefix}/include/opencascade \
+    -DOCE_LIB_PATH=${_installPrefix}/lib \
+    -DPYTHONOCC_INSTALL_DIRECTORY=${_installPrefix}/tools/OCC \
+  "
+
+#-------------------------------------------------------------------------------
+# gmsh
+#-------------------------------------------------------------------------------
+export CASROOT=${_installPrefix}
+git_cmake_build \
+  "gmsh" \
+  "https://gitlab.onelab.info/gmsh/gmsh.git" \
+  "gmsh_4_11_0" \
+  "\
+  -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
+  -DENABLE_BUILD_SHARED=ON \
+  -DENABLE_PRIVATE_API=ON \
+  -DENABLE_SOLVER=OFF \
+  -DENABLE_GETDP=OFF \
+  -DENABLE_GMM=OFF \
+  -DENABLE_GMP=OFF \
+  -DENABLE_KBIPACK=OFF \
+  -DENABLE_METIS=OFF \
+  -DENABLE_MPEG_ENCODE=OFF \
+  -DENABLE_ONELAB_METAMODEL=OFF \
+  -DENABLE_PRO=OFF \
+  -DENABLE_DOMHEX=OFF \
+  -DENABLE_HXT=OFF \
+  -DENABLE_CGNS=OFF \
+  -DENABLE_MATHEX=OFF \
+  -DENABLE_MED=OFF \
+  -DENABLE_MMG=OFF \
+  -DENABLE_OCC=ON \
+  -DENABLE_OCC_CAF=OFF \
+  -DENABLE_QUADTRI=OFF \
+  -DENABLE_QUADMESHINGTOOLS=OFF \
+  -DENABLE_WINSLOWUNTANGLER=OFF \
+  -DBUILD_TESTING=OFF \
+  -DENABLE_WRAP_PYTHON=ON \
+  -DGMSHPY_INSTALL_DIRECTORY=${_installPrefix}/tools/gmshpy \
+  "
+  
+#-------------------------------------------------------------------------------
+# moab
+#-------------------------------------------------------------------------------
+git_cmake_build \
+  "moab" \
+  "https://bitbucket.org/fathomteam/moab.git" \
+  "5.5.0" \
+  "\
+  -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
+  -DENABLE_CGM=OFF \
+  -DENABLE_CGNS=ON \
+  -DCMAKE_CXX_FLAGS=-I${_installPrefix}/include \
+  -DCMAKE_EXE_LINKER_FLAGS=${_installPrefix}/lib/libcgns.so \
+  -DCMAKE_SHARED_LINKER_FLAGS=${_installPrefix}/lib/libcgns.so \
+  "
+  
+#-------------------------------------------------------------------------------
+# cgal
+#-------------------------------------------------------------------------------
+git_cmake_build \
+  "cgal" \
+  "https://github.com/CGAL/cgal" \
+  "v4.14.3" \
+  "\
+  -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DMPFR_INCLUDE_DIR=${_installPrefix}/include \
+  -DMPFR_LIBRARIES=${_installPrefix}/lib64 \
+  "
+  
+#-------------------------------------------------------------------------------
+# muparser
+#-------------------------------------------------------------------------------
+git_cmake_build \
+  "muparser" \
+  "https://github.com/beltoforion/muparser" \
+  "" \
+  "-DCMAKE_INSTALL_PREFIX=${_installPrefix}"
+
+#-------------------------------------------------------------------------------
+# json
+#-------------------------------------------------------------------------------
+git_cmake_build \
+  "nlohmann_json" \
+  "https://github.com/nlohmann/json" \
+  "v3.11.3" \
+  "\
+   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
+   -DCMAKE_BUILD_TYPE=Release \
+   -DJSON_MultipleHeaders=ON \
+  "
+
+#-------------------------------------------------------------------------------
+# root
+#-------------------------------------------------------------------------------
+git_cmake_build \
+  "root" \
+  "https://github.com/root-project/root" \
+  "v6-28-06" \
+  "\
+   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
+   -Dminuit2=ON \
+   -Dmathmore=ON \
+   -DCMAKE_BUILD_TYPE=Release \
+   -Dbuiltin_openssl=FALSE \
+   -Dbuiltin_xrootd=FALSE \
+   -Dxrootd=FALSE \
+   -Dssl=FALSE \
+   -Dx11=FALSE \
+  "
