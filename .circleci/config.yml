@@ -16,7 +16,7 @@ jobs:
           name: Build and Push Docker image
           command: |
             GIT_REV=`git rev-parse HEAD`
-            docker build --progress=plain -t ${DOCKER_USERNAME}/dtoo-prep:${GIT_REV} -t ${DOCKER_USERNAME}/dtoo-prep:latest .
+            docker build --progress=plain -t ${DOCKER_USERNAME}/dtoo-base:${GIT_REV} -t ${DOCKER_USERNAME}/dtoo-base:latest .
             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-            docker push --all-tags ${DOCKER_USERNAME}/dtoo-prep
+            docker push --all-tags ${DOCKER_USERNAME}/dtoo-base
 
