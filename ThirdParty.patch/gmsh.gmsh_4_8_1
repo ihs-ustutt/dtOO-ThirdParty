@@ -1,0 +1,63 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 893e01997..4743b368e 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -145,7 +145,7 @@ if(ENABLE_PRIVATE_API)
+   message(WARNING "The private API is unsupported and undocumented. It is meant "
+           "for expert Gmsh developers, not for regular Gmsh users, who should rely "
+           "on the stable public API (gmsh/api) instead.")
+-  file(GLOB_RECURSE HEADERS Common/*.h Numeric/*.h Geo/*.h Mesh/*.h Solver/*.h
++  file(GLOB_RECURSE HEADERS Parser/*.h Common/*.h Numeric/*.h Geo/*.h Mesh/*.h Solver/*.h
+     Post/*.h Plugin/*.h Graphics/*.h contrib/kbipack/*.h
+     contrib/DiscreteIntegration/*.h contrib/HighOrderMeshOptimizer/*.h
+     contrib/MeshOptimizer/*.h contrib/MeshQualityOptimizer/*.h)
+diff --git a/Geo/GEntity.h b/Geo/GEntity.h
+index b59178392..f88b56b3a 100644
+--- a/Geo/GEntity.h
++++ b/Geo/GEntity.h
+@@ -272,6 +272,7 @@ public:
+ 
+   // the model owning this entity
+   GModel *model() const { return _model; }
++  void setModel( GModel * model ) { _model = model; }
+ 
+   // get/set the tag of the entity
+   int tag() const { return _tag; }
+diff --git a/Geo/MVertex.h b/Geo/MVertex.h
+index 234b04482..196201550 100644
+--- a/Geo/MVertex.h
++++ b/Geo/MVertex.h
+@@ -78,6 +78,7 @@ public:
+ 
+   // get the immutab vertex number
+   std::size_t getNum() const { return _num; }
++  inline void setNum(int const num) { _num = num; }
+ 
+   // force the immutable number (this should never be used, except when
+   // explicitly renumbering the mesh)
+diff --git a/Mesh/meshGEdge.cpp b/Mesh/meshGEdge.cpp
+index 467115224..d3cc3c3ca 100644
+--- a/Mesh/meshGEdge.cpp
++++ b/Mesh/meshGEdge.cpp
+@@ -311,7 +311,7 @@ static SPoint3 transform(MVertex *vsource, const std::vector<double> &tfo)
+   return SPoint3(res[0], res[1], res[2]);
+ }
+ 
+-static void copyMesh(GEdge *from, GEdge *to, int direction)
++void copyMesh(GEdge *from, GEdge *to, int direction)
+ {
+   if(!from->getBeginVertex() || !from->getEndVertex() ||
+      !to->getBeginVertex() || !to->getEndVertex()) {
+diff --git a/Mesh/meshGFace.cpp b/Mesh/meshGFace.cpp
+index 3ea7069b8..cc16b1d83 100644
+--- a/Mesh/meshGFace.cpp
++++ b/Mesh/meshGFace.cpp
+@@ -323,7 +323,7 @@ public:
+   }
+ };
+ 
+-static void copyMesh(GFace *source, GFace *target)
++void copyMesh(GFace *source, GFace *target)
+ {
+   std::map<MVertex *, MVertex *> vs2vt;
+ 
