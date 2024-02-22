@@ -18,14 +18,18 @@ RUN zypper -n install \
   python3 python3-devel \
   python python-devel \
   vim \
-  gcc-fortran gcc-c++ gcc \
+  gcc12-fortran gcc12-c++ gcc12 \
   gmp-devel \
   root6 root6-devel Minuit2-devel \
   muparser-devel \
   cgal-devel \
   occt-devel
-  
-ENV NCPU=4
+
+ENV CC=/usr/bin/gcc-12
+ENV CXX=/usr/bin/g++-12
+ENV FC=/usr/bin/gfortran-12
+
+ENV NCPU=2
 
 RUN git clone https://github.com/ihs-ustutt/dtOO-ThirdParty.git 
 
