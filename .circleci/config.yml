@@ -4,6 +4,7 @@ jobs:
   build:
     docker:
       - image: "cimg/base:current"
+    resource_class: medium
     steps:
       - checkout
       - setup_remote_docker
