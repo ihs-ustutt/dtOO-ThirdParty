@@ -24,9 +24,9 @@ RUN zypper -n install \
   muparser-devel \
   cgal-devel \
   occt-devel \
-  openfoam2306 openfoam2306-common openfoam2306-default \
-  openfoam2306-devel openfoam2306-doc openfoam2306-tools \
-  openfoam2306-tutorials
+  openfoam2312 openfoam2312-common openfoam2312-default \
+  openfoam2312-devel openfoam2312-doc openfoam2312-tools \
+  openfoam2312-tutorials
 
 ENV CC=/usr/bin/gcc-12
 ENV CXX=/usr/bin/g++-12
@@ -48,10 +48,11 @@ RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o moab
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o nlohmann_json
 
 WORKDIR /foamFine/of
-RUN . /usr/lib/openfoam/openfoam2306/etc/bashrc && wmake all
+RUN . /usr/lib/openfoam/openfoam2312/etc/bashrc && wmake all
+RUN ln -s /root/OpenFOAM/user-2312 /root/OpenFOAM/root-2312
 
 RUN touch /root/.bashrc
-RUN echo "source /usr/lib/openfoam/openfoam2306/etc/bashrc" >> /root/.bashrc
+RUN echo "source /usr/lib/openfoam/openfoam2312/etc/bashrc" >> /root/.bashrc
 ENV FOAMXDOGBALL_DIR=/foamFine
 
 WORKDIR /
