@@ -15,7 +15,7 @@ RUN zypper -n install \
   gzip \
   freetype2-devel tk-devel Mesa-libGL-devel fontconfig-devel \
   libXext-devel libXmu-devel libXi-devel \
-  python3 python3-devel \
+  python3 python3-devel python3-numpy \
   python python-devel \
   vim \
   gcc12-fortran gcc12-c++ gcc12 \
@@ -23,7 +23,10 @@ RUN zypper -n install \
   root6 root6-devel Minuit2-devel \
   muparser-devel \
   cgal-devel \
-  occt-devel
+  occt-devel \
+  openfoam2312 openfoam2312-common openfoam2312-default \
+  openfoam2312-devel openfoam2312-doc openfoam2312-tools \
+  openfoam2312-tutorials
 
 ENV CC=/usr/bin/gcc-12
 ENV CXX=/usr/bin/g++-12
@@ -31,15 +34,22 @@ ENV FC=/usr/bin/gfortran-12
 
 ENV NCPU=2
 
+WORKDIR /
 RUN git clone https://github.com/ihs-ustutt/dtOO-ThirdParty.git 
+RUN git clone https://github.com/ihs-ustutt/foamFine.git
 
 WORKDIR /dtOO-ThirdParty
-
 ENV DTOO_EXTERNLIBS=/dtOO-install
-
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o cgns
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openmesh
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openvolumemesh
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o gmsh
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o moab
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o nlohmann_json
+
+WORKDIR /foamFine/of
+RUN . /usr/lib/openfoam/openfoam2312/etc/bashrc && wmake all
+RUN touch /root/.bashrc
+RUN echo "source /usr/lib/openfoam/openfoam2312/etc/bashrc" >> /root/.bashrc
+
+WORKDIR /
