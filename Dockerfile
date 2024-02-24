@@ -15,7 +15,8 @@ RUN zypper -n install \
   gzip \
   freetype2-devel tk-devel Mesa-libGL-devel fontconfig-devel \
   libXext-devel libXmu-devel libXi-devel \
-  python3 python3-devel python3-numpy \
+  python3 python3-devel python3-numpy python3-oslo.concurrency \
+  python3-scikit-learn \
   python python-devel \
   vim \
   gcc12-fortran gcc12-c++ gcc12 \
