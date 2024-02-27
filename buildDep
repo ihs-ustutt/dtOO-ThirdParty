@@ -210,7 +210,7 @@ git_cmake_build \
 git_cmake_build \
   "occt" \
   "https://git.dev.opencascade.org/repos/occt.git" \
-  "V7_5_1" \
+  "V7_7_2" \
   "\
     -DINSTALL_DIR=${_installPrefix} \
     -DBUILD_RELEASE_DISABLE_EXCEPTIONS=FALSE \
@@ -222,10 +222,10 @@ git_cmake_build \
 git_cmake_build \
   "pythonocc-core" \
   "https://github.com/tpaviot/pythonocc-core.git" \
-  "7.5.1" \
+  "7.7.2" \
   "\
-    -DOCE_INCLUDE_PATH=${_installPrefix}/include/opencascade \
-    -DOCE_LIB_PATH=${_installPrefix}/lib \
+    -DOCCT_INCLUDE_DIR=${_installPrefix}/include/opencascade \
+    -DOCCT_LIBRARY_DIR=${_installPrefix}/lib \
     -DPYTHONOCC_INSTALL_DIRECTORY=${_installPrefix}/tools/OCC \
   "
 
