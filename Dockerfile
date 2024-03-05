@@ -11,7 +11,7 @@ RUN zypper -n install \
   gsl-devel libboost_system1_66_0-devel libboost_timer1_66_0-devel \
   libboost_filesystem1_66_0-devel libboost_program_options1_66_0-devel \
   libboost_regex1_66_0-devel libboost_thread1_66_0-devel \
-  swig-4.1.1 \
+  swig-4.2.1 \
   gzip \
   freetype2-devel tk-devel Mesa-libGL-devel fontconfig-devel \
   libXext-devel libXmu-devel libXi-devel \
