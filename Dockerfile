@@ -54,7 +54,7 @@ RUN ln -s /root/OpenFOAM/user-2312 /root/OpenFOAM/root-2312
 
 RUN touch /root/.bashrc
 RUN echo "source /usr/lib/openfoam/openfoam2312/etc/bashrc" >> /root/.bashrc
-ENV FOAMXDOGBALL_DIR=/foamFine
+ENV FOAMFINE_DIR=/foamFine
 
 RUN pip3 install pyfoam
 
