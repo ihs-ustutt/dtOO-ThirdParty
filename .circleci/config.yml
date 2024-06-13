@@ -15,7 +15,7 @@ jobs:
             DOCKER_TAG=unstable
             if [[ "$GIT_BRANCH" == "main" ]]; then DOCKER_TAG=stable ; fi
             docker build \
-              --progress=plain \
+              --target base-prod \
               -t ${DOCKER_USERNAME}/dtoo-base:${GIT_REV} \
               -t ${DOCKER_USERNAME}/dtoo-base:latest \
               -t ${DOCKER_USERNAME}/dtoo:${DOCKER_TAG} \
