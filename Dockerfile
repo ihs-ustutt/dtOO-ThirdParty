@@ -46,7 +46,6 @@ ENV CXX=/usr/bin/g++-12
 ENV FC=/usr/bin/gfortran-12
 
 ARG NCPU=2
-ENV NCPU=${NCPU}
 
 RUN git clone https://github.com/ihs-ustutt/foamFine.git
 
