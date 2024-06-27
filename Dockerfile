@@ -13,6 +13,9 @@ RUN zypper --non-interactive \
 RUN zypper --non-interactive \
   addrepo \
   https://download.opensuse.org/repositories/devel:tools:building/15.5/devel:tools:building.repo
+RUN zypper --non-interactive \
+  addrepo \
+  https://download.opensuse.org/repositories/devel:libraries:c_c++/15.5/devel:libraries:c_c++.repo
 RUN zypper --gpg-auto-import-keys refresh
 
 RUN zypper -n install \
@@ -38,25 +41,23 @@ RUN zypper -n install \
   occt-devel \
   openfoam2312 openfoam2312-common openfoam2312-default \
   openfoam2312-devel openfoam2312-doc openfoam2312-tools \
-  openfoam2312-tutorials
-
+  openfoam2312-tutorials \
+  nlohmann_json-devel
 
 ENV CC=/usr/bin/gcc-12
 ENV CXX=/usr/bin/g++-12
 ENV FC=/usr/bin/gfortran-12
 
-ARG NCPU=2
-
 RUN git clone https://github.com/ihs-ustutt/foamFine.git
 
 WORKDIR /dtOO-ThirdParty
 ENV DTOO_EXTERNLIBS=/dtOO-install
+ARG NCPU=2
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o cgns
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openmesh
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openvolumemesh
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o gmsh
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o moab
-RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o nlohmann_json
 
 WORKDIR /foamFine/of
 RUN . /usr/lib/openfoam/openfoam2312/etc/bashrc && wmake all
@@ -102,6 +103,7 @@ RUN zypper -n install \
   libQt5Svg-devel libqt5-qtxmlpatterns-devel libqt5-qttools-devel
 
 WORKDIR /dtOO-ThirdParty
+ARG NCPU
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o paraview
 WORKDIR /
 
