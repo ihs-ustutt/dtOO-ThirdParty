@@ -2,6 +2,7 @@
 
 _skipBuild=0
 _skipDownload=0
+_testRun=0
 
 usage() { 
   echo "$0 usage:" && grep " .)\ #" $0
@@ -13,6 +14,7 @@ git_cmake_build() {
   local _cloneCommand=$2
   local _checkoutCommand=$3
   local _cmakeConf=$4
+  local _addGitCommand="${5}"
 
   echo "# Process $_name ..."
   if [[ "$_dep" == "$_name" || "$_dep" == "all" ]]; then
@@ -22,29 +24,40 @@ git_cmake_build() {
     echo "#   ( G ) _skipDownload    : $_skipDownload"
     echo "#   ( L ) _checkoutCommand : $_checkoutCommand"
     echo "#   ( L ) _cmakeConf       : $_cmakeConf"
-  
-    cd $_pwd
-    if [[ "$_skipDownload" == "0" ]]; then
-      rm -rf ${_pwd}/${_name}
-      git clone $_cloneCommand $_name
-      if [ ! -z "$_checkoutCommand" ]; then
-        cd ${_pwd}/${_name}
-        git checkout $_checkoutCommand
-        if [ -f "${_patch}/${_name}.${_checkoutCommand}" ]; then
-          echo "#     > Apply Patch ${_name}.${_checkoutCommand}"
-          git apply ${_patch}/${_name}.${_checkoutCommand}
+    echo "#   ( L ) _addGitCommand   : $_addGitCommand"
+    
+    if [[ "$_testRun" == 0 ]]; then
+      cd $_pwd
+      if [[ "$_skipDownload" == "0" ]]; then
+        rm -rf ${_pwd}/${_name}
+        git clone $_cloneCommand $_name
+        if [ ! -z "$_checkoutCommand" ]; then
+          cd ${_pwd}/${_name}
+          git checkout $_checkoutCommand
+          if [ -f "${_patch}/${_name}.${_checkoutCommand}" ]; then
+            echo "#     > Apply Patch ${_name}.${_checkoutCommand}"
+            git apply ${_patch}/${_name}.${_checkoutCommand}
+          fi
+          if [ ! -z "$_addGitCommand" ]; then
+            echo "#     > Execute Git Command $_addGitCommand"
+            $_addGitCommand
+          fi
         fi
       fi
-    fi
-    mkdir -p ${_pwd}/build_$_name
-    if [[ "$_skipBuild" == "0" ]]; then
-      rm -rf ${_pwd}/build_$_name/*
+      mkdir -p ${_pwd}/build_$_name
+      if [[ "$_skipBuild" == "0" ]]; then
+        rm -rf ${_pwd}/build_$_name/*
+        cd ${_pwd}/build_$_name
+        cmake $_cmakeConf ../$_name
+        make -j${_nProcs}
+      fi
       cd ${_pwd}/build_$_name
-      cmake $_cmakeConf ../$_name
-      make -j${_nProcs}
-    fi
-    cd ${_pwd}/build_$_name
-    make -j${_nProcs} install
+      make -j${_nProcs} install
+    else
+      echo "  ->"
+      echo "  -> Test run"
+      echo "  ->"
+    fi   
   else
     echo "#   ...skip"
   fi
@@ -63,18 +76,24 @@ git_nobuild() {
     echo "#   ( G ) _skipDownload    : $_skipDownload"
     echo "#   ( L ) _checkoutCommand : $_checkoutCommand"
   
-    cd $_pwd
-    if [[ "$_skipDownload" == "0" ]]; then
-      rm -rf ${_pwd}/${_name}
-      git clone $_cloneCommand $_name
-      if [ ! -z "$_checkoutCommand" ]; then
-        cd ${_pwd}/${_name}
-        git checkout $_checkoutCommand
-        if [ -f "${_patch}/${_name}.${_checkoutCommand}" ]; then
-          echo "#     > Apply Patch ${_name}.${_checkoutCommand}"
-          git apply ${_patch}/${_name}.${_checkoutCommand}
+    if [[ "$_testRun" == 0 ]]; then
+      cd $_pwd
+      if [[ "$_skipDownload" == "0" ]]; then
+        rm -rf ${_pwd}/${_name}
+        git clone $_cloneCommand $_name
+        if [ ! -z "$_checkoutCommand" ]; then
+          cd ${_pwd}/${_name}
+          git checkout $_checkoutCommand
+          if [ -f "${_patch}/${_name}.${_checkoutCommand}" ]; then
+            echo "#     > Apply Patch ${_name}.${_checkoutCommand}"
+            git apply ${_patch}/${_name}.${_checkoutCommand}
+          fi
         fi
       fi
+    else
+      echo "  ->"
+      echo "  -> Test run"
+      echo "  ->"
     fi
   else
     echo "#   ...skip"
@@ -82,7 +101,7 @@ git_nobuild() {
 }
 
 [ $# -eq 0 ] && usage
-while getopts ":i:n:ho:bd" opt; do
+while getopts ":i:n:ho:bdt" opt; do
   case ${opt} in
     h) # Display help
       usage
@@ -105,6 +124,9 @@ while getopts ":i:n:ho:bd" opt; do
       ;;
     d) # Skip download
       _skipDownload=1
+      ;;
+    t) # Test run
+      _testRun=1
       ;;
     \?)
       echo "Invalid option: $OPTARG" 1>&2
@@ -165,19 +187,27 @@ git_cmake_build \
 #-------------------------------------------------------------------------------
 echo "# Build mpfr ..."
 if [[ "$_dep" == "mpfr" || "$_dep" == "all" ]]; then
-  cd $_pwd
-  if [[ "$_skipDownload" == "0" ]]; then
-    rm -rf ${_pwd}/mpfr-4.1.0
-    rm -rf ${_pwd}/mpfr-4.1.0.tar.xz
-    #curl -o mpfr-4.1.0.tar.xz https://www.mpfr.org/mpfr-current/mpfr-4.1.0.tar.xz
-    curl -o mpfr-4.1.0.tar.xz https://toolchains.bootlin.com/downloads/releases/sources/mpfr-4.1.0/mpfr-4.1.0.tar.xz
-    tar xvf mpfr-4.1.0.tar.xz
-  fi
-  if [[ "$_skipBuild" == "0" ]]; then
-    cd ${_pwd}/mpfr-4.1.0
-    ./configure \
-      --prefix=${_installPrefix}
+  if [[ "$_testRun" == 0 ]]; then
+    cd $_pwd
+    if [[ "$_skipDownload" == "0" ]]; then
+      rm -rf ${_pwd}/mpfr-4.1.0
+      rm -rf ${_pwd}/mpfr-4.1.0.tar.xz
+      #curl -o mpfr-4.1.0.tar.xz https://www.mpfr.org/mpfr-current/mpfr-4.1.0.tar.xz
+      curl \
+        -o mpfr-4.1.0.tar.xz \
+        https://toolchains.bootlin.com/downloads/releases/sources/mpfr-4.1.0/mpfr-4.1.0.tar.xz
+      tar xvf mpfr-4.1.0.tar.xz
+    fi
+    if [[ "$_skipBuild" == "0" ]]; then
+      cd ${_pwd}/mpfr-4.1.0
+      ./configure \
+        --prefix=${_installPrefix}
+    fi
     make -j${_nProcs} install
+  else
+    echo "  ->"
+    echo "  -> Test run"
+    echo "  ->"
   fi
 else
   echo "# ...skip"
@@ -210,7 +240,7 @@ git_cmake_build \
 git_cmake_build \
   "occt" \
   "https://git.dev.opencascade.org/repos/occt.git" \
-  "V7_7_2" \
+  "V7_8_1" \
   "\
     -DINSTALL_DIR=${_installPrefix} \
     -DBUILD_RELEASE_DISABLE_EXCEPTIONS=FALSE \
@@ -222,7 +252,7 @@ git_cmake_build \
 git_cmake_build \
   "pythonocc-core" \
   "https://github.com/tpaviot/pythonocc-core.git" \
-  "7.7.2" \
+  "7.8.1" \
   "\
     -DOCCT_INCLUDE_DIR=${_installPrefix}/include/opencascade \
     -DOCCT_LIBRARY_DIR=${_installPrefix}/lib \
@@ -236,7 +266,7 @@ export CASROOT=${_installPrefix}
 git_cmake_build \
   "gmsh" \
   "https://gitlab.onelab.info/gmsh/gmsh.git" \
-  "gmsh_4_11_0" \
+  "gmsh_4_13_1" \
   "\
   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   -DENABLE_BUILD_SHARED=ON \
@@ -272,7 +302,7 @@ git_cmake_build \
 git_cmake_build \
   "moab" \
   "https://bitbucket.org/fathomteam/moab.git" \
-  "5.5.0" \
+  "5.5.1" \
   "\
   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   -DENABLE_CGM=OFF \
@@ -288,7 +318,7 @@ git_cmake_build \
 git_cmake_build \
   "cgal" \
   "https://github.com/CGAL/cgal" \
-  "v4.14.3" \
+  "v5.6.1" \
   "\
   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   -DCMAKE_BUILD_TYPE=Release \
@@ -324,10 +354,9 @@ git_cmake_build \
 git_cmake_build \
   "root" \
   "https://github.com/root-project/root" \
-  "v6-28-06" \
+  "v6-32-00" \
   "\
    -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
-   -Dminuit2=ON \
    -Dmathmore=ON \
    -DCMAKE_BUILD_TYPE=Release \
    -Dbuiltin_openssl=FALSE \
@@ -336,3 +365,17 @@ git_cmake_build \
    -Dssl=FALSE \
    -Dx11=FALSE \
   "
+
+#-------------------------------------------------------------------------------
+# paraview
+#-------------------------------------------------------------------------------
+git_cmake_build \
+  "paraview" \
+  "https://github.com/Kitware/ParaView.git" \
+  "v5.12.1" \
+  "\
+  -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
+  -DPARAVIEW_USE_QTHELP=OFF \
+  -DPARAVIEW_USE_PYTHON=ON \
+  " \
+  "git submodule update --init --recursive"
