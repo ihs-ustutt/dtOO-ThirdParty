@@ -1,8 +1,7 @@
 FROM alpine/git AS repo
 WORKDIR /
 RUN git clone https://github.com/ihs-ustutt/dtOO-ThirdParty.git
-COPY . /dtOO-ThirdParty.local
-WORKDIR /dtOO-ThirdParty.local
+WORKDIR /dtOO-ThirdParty
 ARG GIT_REV=main
 RUN git checkout ${GIT_REV}
 WORKDIR /
