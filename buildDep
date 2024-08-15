@@ -52,10 +52,14 @@ output_exit_on_error () {
   shift 2
 
   info "Execute: $_fun_call $@"
-  $_fun_call $@ >> $_log_file 2>&1 \
-    || error "  !\n  !\n  ! Failed: Please check ${_log_file}\n  !\n  !"
-
-  dbg "\n\n[ ... ]\n\n$(tail ${_log_file})"
+  if [[ "$_tee" == "false" ]]; then
+    $_fun_call $@ >> $_log_file 2>&1 \
+      || error "  !\n  !\n  ! Failed: Please check ${_log_file}\n  !\n  !"
+    dbg "\n\n[ ... ]\n\n$(tail ${_log_file})"
+  else
+    $_fun_call $@ | tee $_log_file 2>&1 \
+      || error "  !\n  !\n  ! Failed: Please check ${_log_file}\n  !\n  !"
+  fi
 }
 
 git_cmake_build() {
@@ -206,6 +210,7 @@ _testRun=0
 _listDep=0
 _debug=false
 declare -A _extraCmake
+_tee=false
 
 # no input given 
 [ $# -eq 0 ] && usage
@@ -223,7 +228,7 @@ args=$(\
     --long \
       installPrefix:,nProcs:,dep:,extra-cmake: \
     --long \
-      debug \
+      debug,tee \
     -- "$@"\
 )
 [ $? -gt 0 ] && error "Return status of getopt $?"
@@ -282,6 +287,12 @@ do
       ;;
       ##  --debug
       ##    Debug output.
+     --tee) _tee=true
+      shift
+      ;;
+      ##  --tee
+      ##    Output of commands during build is shown on stdout.
+     
     --) shift; break ;; # end of arguments
     *) error "Unsupported option: $1" ;;
   esac
