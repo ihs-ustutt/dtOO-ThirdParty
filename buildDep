@@ -310,6 +310,7 @@ for i in "${!_extraCmake[@]}"; do
   dbg "Option _extraCmake[${i}]=${_extraCmake[$i]}"
 done
 dbg "Option _debug=${_debug}"
+dbg "Option _tee=${_tee}"
 
 # check for unused parameters
 [[ ! -z "$@" ]] && error "Unknown parameter values: $@"
@@ -411,7 +412,7 @@ git_cmake_build \
 export CASROOT=${_installPrefix}
 git_cmake_build \
   "gmsh" \
-  "https://github.com/live-clones/gmsh.git" \
+  "https://gitlab.onelab.info/gmsh/gmsh.git" \
   "gmsh_4_13_1" \
   "\
   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
