@@ -1,12 +1,65 @@
 #!/bin/bash
+#------------------------------------------------------------------------------                                                                                                                                                      
+#  dtOO < design tool Object-Oriented >                                         
+#                                                                               
+#    Copyright (C) 2024 A. Tismer.                                              
+#------------------------------------------------------------------------------ 
+#License                                                                        
+#    This file is part of dtOO.                                                 
+#                                                                               
+#    dtOO is distributed in the hope that it will be useful, but WITHOUT        
+#    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or      
+#    FITNESS FOR A PARTICULAR PURPOSE.  See the LICENSE.txt file in the         
+#    dtOO root directory for more details.                                      
+#                                                                               
+#    You should have received a copy of the License along with dtOO.            
+#                                                                               
+#------------------------------------------------------------------------------ 
 
-_skipBuild=0
-_skipDownload=0
-_testRun=0
+log_base() { 
+  echo -e `date +"%d-%m-%Y %H:%M:%S"` " - " "${@}"
+}
 
-usage() { 
-  echo "$0 usage:" && grep " .)\ #" $0
-  exit 0
+info() { 
+  log_base "[I] - ${@}"
+}
+
+dbg() {
+  [[ ${_debug:-false} == "true" ]] && log_base "[D] - \e[90m${@}\e[0m"
+}
+
+warn() {
+  log_base "[W] - \e[33m${@}\e[0m"
+}
+
+error() {
+  log_base "[E] - \e[31m${@}\e[0m" >&2
+  exit 1
+}
+
+output() {
+  echo -e "${@}"
+}
+
+output_exit_on_error () {
+  if [ $# -eq 0 ]; then
+    error "Usage: This wrapper function takes any function with args and"\
+          "logs output to <func_name_log.txt>"
+  fi
+
+  local _log_file="$1"
+  local _fun_call="$2"
+  shift 2
+
+  info "Execute: $_fun_call $@"
+  if [[ "$_tee" == "false" ]]; then
+    $_fun_call $@ >> $_log_file 2>&1 \
+      || error "  !\n  !\n  ! Failed: Please check ${_log_file}\n  !\n  !"
+    dbg "\n\n[ ... ]\n\n$(tail ${_log_file})"
+  else
+    $_fun_call $@ | tee $_log_file 2>&1 \
+      || error "  !\n  !\n  ! Failed: Please check ${_log_file}\n  !\n  !"
+  fi
 }
 
 git_cmake_build() {
@@ -16,31 +69,42 @@ git_cmake_build() {
   local _cmakeConf=$4
   local _addGitCommand="${5}"
 
-  echo "# Process $_name ..."
+  [[ "$_listDep" == 1 ]] && output "$_name -> ${_name}@<CMAKE-OPTION>" && return
+  
+  info "Process $_name ..."
   if [[ "$_dep" == "$_name" || "$_dep" == "all" ]]; then
-    echo "#   ( L ) _name            : $_name"
-    echo "#   ( G ) _dep             : $_dep"
-    echo "#   ( G ) _skipBuild       : $_skipBuild"
-    echo "#   ( G ) _skipDownload    : $_skipDownload"
-    echo "#   ( L ) _checkoutCommand : $_checkoutCommand"
-    echo "#   ( L ) _cmakeConf       : $_cmakeConf"
-    echo "#   ( L ) _addGitCommand   : $_addGitCommand"
-    
+    info "( L ) _name            : $_name"
+    info "( G ) _dep             : $_dep"
+    info "( G ) _skipBuild       : $_skipBuild"
+    info "( G ) _skipDownload    : $_skipDownload"
+    info "( G ) _extraCmake      : ${_extraCmake[$_name]}"
+    info "( L ) _checkoutCommand : $_checkoutCommand"
+    info "( L ) _cmakeConf       : $_cmakeConf"
+    info "( L ) _addGitCommand   : $_addGitCommand"
+  
+   
     if [[ "$_testRun" == 0 ]]; then
+      # create log file
+      local _logFile=${_pwd}/${_name}.log
+      echo -e "#\n# Output for ${_name} \n#\n\n" > ${_logFile} 2>&1
+      
       cd $_pwd
+      
       if [[ "$_skipDownload" == "0" ]]; then
         rm -rf ${_pwd}/${_name}
-        git clone $_cloneCommand $_name
+        output_exit_on_error ${_logFile} \
+          git clone $_cloneCommand $_name
         if [ ! -z "$_checkoutCommand" ]; then
           cd ${_pwd}/${_name}
-          git checkout $_checkoutCommand
+          output_exit_on_error $_logFile \
+            git checkout $_checkoutCommand
           if [ -f "${_patch}/${_name}.${_checkoutCommand}" ]; then
-            echo "#     > Apply Patch ${_name}.${_checkoutCommand}"
-            git apply ${_patch}/${_name}.${_checkoutCommand}
+            output_exit_on_error ${_logFile} \
+              git apply ${_patch}/${_name}.${_checkoutCommand} 
           fi
           if [ ! -z "$_addGitCommand" ]; then
-            echo "#     > Execute Git Command $_addGitCommand"
-            $_addGitCommand
+            output_exit_on_error ${_logFile} \
+              $_addGitCommand 
           fi
         fi
       fi
@@ -48,112 +112,218 @@ git_cmake_build() {
       if [[ "$_skipBuild" == "0" ]]; then
         rm -rf ${_pwd}/build_$_name/*
         cd ${_pwd}/build_$_name
-        cmake $_cmakeConf ../$_name
-        make -j${_nProcs}
+        output_exit_on_error ${_logFile} \
+          cmake \
+            ${_cmakeConf} \
+            ${_extraCmake[$_name]} \
+            ../${_name}
+        output_exit_on_error ${_logFile} \
+          make -j${_nProcs}
       fi
       cd ${_pwd}/build_$_name
-      make -j${_nProcs} install
+      output_exit_on_error ${_logFile} \
+        make -j${_nProcs} install 
     else
-      echo "  ->"
-      echo "  -> Test run"
-      echo "  ->"
+      info "  ->"
+      info "  -> Test run"
+      info "  ->"
     fi   
   else
-    echo "#   ...skip"
+    info "  ...skip"
   fi
 }
 
-git_nobuild() {
+curl_configure_build() {
   local _name=$1
-  local _cloneCommand=$2
-  local _checkoutCommand=$3
+  local _curlCommand=$2
+  local _configureConf=$3
 
-  echo "# Process $_name ..."
+  [[ "$_listDep" == 1 ]] && output "$_name" && return
+
+  info "Process $_name ..."
   if [[ "$_dep" == "$_name" || "$_dep" == "all" ]]; then
-    echo "#   ( L ) _name            : $_name"
-    echo "#   ( G ) _dep             : $_dep"
-    echo "#   ( G ) _skipBuild       : $_skipBuild"
-    echo "#   ( G ) _skipDownload    : $_skipDownload"
-    echo "#   ( L ) _checkoutCommand : $_checkoutCommand"
-  
+    info "( L ) _name            : $_name"
+    info "( G ) _dep             : $_dep"
+    info "( G ) _skipBuild       : $_skipBuild"
+    info "( G ) _skipDownload    : $_skipDownload"
+    info "( L ) _curlCommand     : $_curlCommand"
+    info "( L ) _configureConf   : $_configureConf"
+   
     if [[ "$_testRun" == 0 ]]; then
-      cd $_pwd
+      # create log file
+      local _logFile=${_pwd}/${_name}.log
+      echo -e "#\n# Output for ${_name} \n#\n\n" > ${_logFile} 2>&1
+      
+      cd $_pwd 
+
       if [[ "$_skipDownload" == "0" ]]; then
         rm -rf ${_pwd}/${_name}
-        git clone $_cloneCommand $_name
-        if [ ! -z "$_checkoutCommand" ]; then
-          cd ${_pwd}/${_name}
-          git checkout $_checkoutCommand
-          if [ -f "${_patch}/${_name}.${_checkoutCommand}" ]; then
-            echo "#     > Apply Patch ${_name}.${_checkoutCommand}"
-            git apply ${_patch}/${_name}.${_checkoutCommand}
-          fi
+        rm -rf ${_pwd}/${_name}.tar.xz
+        output_exit_on_error ${_logFile} \
+          curl \
+            -O \
+            ${_curlCommand}
+
+        if [ -f "${_name}.tar.xz" ]; then
+          output_exit_on_error ${_logFile} \
+            tar xvf ${_name}.tar.xz 
         fi
       fi
+      if [[ "$_skipBuild" == "0" ]]; then
+        cd ${_pwd}/${_name}
+        output_exit_on_error ${_logFile} \
+          ./configure \
+            ${_configureConf} 
+      fi
+      cd ${_pwd}/${_name}
+      output_exit_on_error ${_logFile} \
+        make -j${_nProcs} install 
     else
-      echo "  ->"
-      echo "  -> Test run"
-      echo "  ->"
+      info "  ->"
+      info "  -> Test run"
+      info "  ->"
     fi
   else
-    echo "#   ...skip"
+    info "  ...skip"
   fi
 }
 
+check_bash_version() {
+  local a=4 b=0   # Bash version >= a.b
+
+  (( BASH_VERSINFO[0] > a || \
+    (BASH_VERSINFO[0] == a && BASH_VERSINFO[1] >= b) )) || {
+      error "Error: Bash version >= $a.$b expected."
+  }
+}
+check_bash_version
+
+usage() { 
+  output "Usage: $0 [OPTION]\n" && grep "^ \+##" $0 | sed -e "s/^.*.##//g"
+  exit 0
+}
+
+# init variables
+_skipBuild=0
+_skipDownload=0
+_testRun=0
+_listDep=0
+_debug=false
+declare -A _extraCmake
+_tee=false
+
+# no input given 
 [ $# -eq 0 ] && usage
-while getopts ":i:n:ho:bdt" opt; do
-  case ${opt} in
-    h) # Display help
-      usage
+
+#
+# parse options
+#
+args=$(\
+  getopt \
+    -a \
+    -o \
+    hbdtli:n:o: \
+    --long \
+      help,skipBuild,skipDownload,testRun,listDep \
+    --long \
+      installPrefix:,nProcs:,dep:,extra-cmake: \
+    --long \
+      debug,tee \
+    -- "$@"\
+)
+[ $? -gt 0 ] && error "Return status of getopt $?"
+
+eval set -- ${args}
+while :
+do
+  case $1 in
+    -h | --help) usage ; shift ;;
+      ##  -h, --help
+      ##    Show this help.
+    -b | --skipBuild) _skipBuild=1 ; shift ;;
+      ##  -b --skipBuild
+      ##    Skip cmake build step.
+    -d | --skipDownload) _skipDownload=1 ; shift ;;
+      ##  -d, --skipDownload
+      ##    Skip download step.
+    -t | --testRun) _testRun=1 ; shift ;;
+      ##  -t, --testRun
+      ##    Perform only test run; nothing will be compiled.
+    -l | --listDep) _listDep=1 ; shift ;;
+      ##  -l, --listDep
+      ##    List dependencies.
+    -i | --installPrefix) _installPrefix=$2 ; shift 2 ;;
+      ##  -i input, --installPrefix input
+      ##    Define prefix of installation directory.
+    -n | --nProcs) _nProcs=$2 ; shift 2 ;;
+      ##  -n input, --nProcs input
+      ##    Define number of processors used for compiling.
+    -o | --dep) _dep=$2 ; shift 2 ;;
+      ##  -o input, --dep input
+      ##    Define which dependency to build.
+    --extra-cmake) \
+      __key=`echo $2 | sed 's/@.*$//g'` \
+      && \
+      __val=`echo $2 | sed 's/^.*@//g'` \
+      ; \
+      shift 2 \
+      ; \
+      _extraCmake[${__key}]=${__val} ;;
+      ##  --extra-cmake input
+      ##    Define additional cmake configure string. You can give multiple
+      ##    --extra-cmake options. The "@" sign is used as delimiter. A call to
+      ##    this script by
+      ##      
+      ##      > sh buildDep \
+      ##      > -o all \
+      ##      > ...
+      ##      > --extra-cmake=occt@-DPython_EXECUTABLE=/usr/bin/python3.7 \
+      ##      > --extra-cmake=pythonocc-core@-DPython_EXECUTABLE=/usr/bin/python3.11
+      ##    
+      ##    sets an extra make option for occt and pythonocc-core.
+    --debug) _debug=true 
+      warn "If you would like to debug as much as possible, then the debug option has to be the first one."
+      shift
       ;;
-    i) # Specify the prefix for install (_installPrefix)
-      _installPrefix=${OPTARG}
-      if [[ "$_installPrefix" != /* ]]; then
-        echo "Please specify relative path starting with /"
-        exit 0
-      fi
+      ##  --debug
+      ##    Debug output.
+     --tee) _tee=true
+      shift
       ;;
-    n) # Specify the number of build processes (_nProcs)
-      _nProcs=$OPTARG
-      ;;
-    o) # Build [ all ] or only one dependency [ cgns lapack mpfr openmesh openvolumemesh occt pythonocc-core gmsh moab cgal muparser root nlohmann_json]
-      _dep=$OPTARG
-      ;;
-    b) # Skip build
-      _skipBuild=1
-      ;;
-    d) # Skip download
-      _skipDownload=1
-      ;;
-    t) # Test run
-      _testRun=1
-      ;;
-    \?)
-      echo "Invalid option: $OPTARG" 1>&2
-      exit
-      ;;
-    :)
-      echo "Option ${OPTARG} requires an argument" 1>&2
-      exit
-      ;;
+      ##  --tee
+      ##    Output of commands during build is shown on stdout.
+     
+    --) shift; break ;; # end of arguments
+    *) error "Unsupported option: $1" ;;
   esac
 done
-shift $((OPTIND -1))
 
-echo "#"
-echo "# _installPrefix=${_installPrefix}"
-echo "# _nProcs=${_nProcs}"
-echo "# _dep=${_dep}"
-echo "# _skipBuild=${_skipBuild}"
-echo "# _skipDownload=${_skipDownload}"
-echo "#"
+# output options
+dbg "Option _skipBuild=${_skipBuild}"
+dbg "Option _skipDownload=${_skipDownload}"
+dbg "Option _testRun=${_testRun}"
+dbg "Option _listDep=${_listDep}"
+dbg "Option _installPrefix=${_installPrefix}"
+dbg "Option _nProcs=${_nProcs}"
+dbg "Option _dep=${_dep}"
+for i in "${!_extraCmake[@]}"; do
+  dbg "Option _extraCmake[${i}]=${_extraCmake[$i]}"
+done
+dbg "Option _debug=${_debug}"
+dbg "Option _tee=${_tee}"
 
-# create directory
+# check for unused parameters
+[[ ! -z "$@" ]] && error "Unknown parameter values: $@"
+
+# create and change to ThirdParty directory
 mkdir -p ThirdParty
-_patch=`pwd`
-_patch=${_patch}/ThirdParty.patch
 cd ThirdParty
+
+# store working directory
 _pwd=`pwd`
+
+# store ThirdParty.patch directory
+_patch=${_pwd}/ThirdParty.patch
 
 #-------------------------------------------------------------------------------
 # cgns
@@ -185,33 +355,10 @@ git_cmake_build \
 #-------------------------------------------------------------------------------
 # mpfr
 #-------------------------------------------------------------------------------
-echo "# Build mpfr ..."
-if [[ "$_dep" == "mpfr" || "$_dep" == "all" ]]; then
-  if [[ "$_testRun" == 0 ]]; then
-    cd $_pwd
-    if [[ "$_skipDownload" == "0" ]]; then
-      rm -rf ${_pwd}/mpfr-4.1.0
-      rm -rf ${_pwd}/mpfr-4.1.0.tar.xz
-      #curl -o mpfr-4.1.0.tar.xz https://www.mpfr.org/mpfr-current/mpfr-4.1.0.tar.xz
-      curl \
-        -o mpfr-4.1.0.tar.xz \
-        https://toolchains.bootlin.com/downloads/releases/sources/mpfr-4.1.0/mpfr-4.1.0.tar.xz
-      tar xvf mpfr-4.1.0.tar.xz
-    fi
-    if [[ "$_skipBuild" == "0" ]]; then
-      cd ${_pwd}/mpfr-4.1.0
-      ./configure \
-        --prefix=${_installPrefix}
-    fi
-    make -j${_nProcs} install
-  else
-    echo "  ->"
-    echo "  -> Test run"
-    echo "  ->"
-  fi
-else
-  echo "# ...skip"
-fi
+curl_configure_build \
+  "mpfr-4.1.0" \
+  "https://toolchains.bootlin.com/downloads/releases/sources/mpfr-4.1.0/mpfr-4.1.0.tar.xz" \
+  "--prefix=${_installPrefix}"
 
 #-------------------------------------------------------------------------------
 # OpenMesh
@@ -380,3 +527,5 @@ git_cmake_build \
   -DPARAVIEW_ENABLE_EMBEDDED_DOCUMENTATION=OFF \
   " \
   "git submodule update --init --recursive"
+
+exit 0

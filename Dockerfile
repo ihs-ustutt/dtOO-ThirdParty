@@ -2,6 +2,10 @@ FROM alpine/git AS repo
 WORKDIR /
 RUN git clone https://github.com/ihs-ustutt/dtOO-ThirdParty.git
 COPY . /dtOO-ThirdParty.local
+WORKDIR /dtOO-ThirdParty
+ARG GIT_REV=main
+RUN git checkout ${GIT_REV}
+WORKDIR /
 
 FROM opensuse/leap:15.5 AS base
 ARG CBASE=
@@ -53,11 +57,11 @@ RUN git clone https://github.com/ihs-ustutt/foamFine.git
 WORKDIR /dtOO-ThirdParty
 ENV DTOO_EXTERNLIBS=/dtOO-install
 ARG NCPU=2
-RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o cgns
-RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openmesh
-RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openvolumemesh
-RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o gmsh
-RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o moab
+RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o cgns -tee
+RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openmesh -tee
+RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openvolumemesh -tee
+RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o gmsh -tee
+RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o moab -tee
 
 WORKDIR /foamFine/of
 RUN . /usr/lib/openfoam/openfoam2312/etc/bashrc && wmake all
@@ -104,7 +108,7 @@ RUN zypper -n install \
 
 WORKDIR /dtOO-ThirdParty
 ARG NCPU
-RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o paraview
+RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o paraview -tee
 WORKDIR /
 
 FROM ext AS ext-prod
