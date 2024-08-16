@@ -315,15 +315,20 @@ dbg "Option _tee=${_tee}"
 # check for unused parameters
 [[ ! -z "$@" ]] && error "Unknown parameter values: $@"
 
+# store working directory
+_pwd=`pwd`
+
 # create and change to ThirdParty directory
 mkdir -p ThirdParty
 cd ThirdParty
 
-# store working directory
-_pwd=`pwd`
-
 # store ThirdParty.patch directory
 _patch=${_pwd}/ThirdParty.patch
+
+dbg "Patches in $_patch"
+for aPatch in `ls $_patch`; do
+  dbg "Found patch for $aPatch"
+done
 
 #-------------------------------------------------------------------------------
 # cgns
