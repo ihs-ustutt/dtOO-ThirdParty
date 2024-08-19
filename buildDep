@@ -54,7 +54,7 @@ output_exit_on_error () {
   info "Execute: $_fun_call $@"
   if [[ "$_tee" == "false" ]]; then
     $_fun_call $@ >> $_log_file 2>&1 \
-      || error "  !\n  !\n  ! Failed: Please check ${_log_file}\n  !\n  !"
+      || error "Failed: Please check ${_log_file}"
     dbg "\n\n[ ... ]\n\n$(tail ${_log_file})"
   else
     $_fun_call $@ | tee $_log_file 2>&1 \
@@ -315,17 +315,18 @@ dbg "Option _tee=${_tee}"
 # check for unused parameters
 [[ ! -z "$@" ]] && error "Unknown parameter values: $@"
 
-# store working directory
-_pwd=`pwd`
-
 # create and change to ThirdParty directory
 mkdir -p ThirdParty
 cd ThirdParty
 
-# store ThirdParty.patch directory
-_patch=${_pwd}/ThirdParty.patch
+# store working directory
+_pwd=`pwd`
 
-dbg "Patches in $_patch"
+# store ThirdParty.patch directory
+_patch=${_pwd}.patch
+
+dbg "Build path $_pwd"
+dbg "Patch path $_patch"
 for aPatch in `ls $_patch`; do
   dbg "Found patch for $aPatch"
 done
