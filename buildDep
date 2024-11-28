@@ -461,8 +461,7 @@ git_cmake_build \
   -DENABLE_CGM=OFF \
   -DENABLE_CGNS=ON \
   -DCMAKE_CXX_FLAGS=-I${_installPrefix}/include \
-  -DCMAKE_EXE_LINKER_FLAGS=${_installPrefix}/lib/libcgns.so \
-  -DCMAKE_SHARED_LINKER_FLAGS=${_installPrefix}/lib/libcgns.so \
+  -DMOAB_DEP_LIBRARIES=${_installPrefix}/lib/libcgns.so \
   "
   
 #-------------------------------------------------------------------------------
