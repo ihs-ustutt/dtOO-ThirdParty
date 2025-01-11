@@ -133,6 +133,59 @@ git_cmake_build() {
   fi
 }
 
+root_directDownload() {
+  local _name=$1
+
+  [[ "$_listDep" == 1 ]] && output "$_name" && return
+
+  info "Process $_name ..."
+  if [[ "$_dep" == "$_name" || "$_dep" == "all" ]]; then
+    info "( L ) _name            : $_name"
+    info "( G ) _dep             : $_dep"
+    info "( G ) _skipBuild       : $_skipBuild"
+    info "( G ) _skipDownload    : $_skipDownload"
+   
+    if [[ "$_testRun" == 0 ]]; then
+      # create log file
+      local _logFile=${_pwd}/${_name}.log
+      echo -e "#\n# Output for ${_name} \n#\n\n" > ${_logFile} 2>&1
+      
+      cd $_pwd 
+
+      if [[ "$_skipDownload" == "0" ]]; then
+        rm -rf ${_pwd}/${_name}
+        rm -rf ${_pwd}/${_name}.tar.gz
+        
+        __filename_0="$_name"
+        __filename_1="tar.gz"
+        __filename="${__filename_0}.${__filename_1}"
+        
+        output_exit_on_error ${_logFile} \
+          curl \
+            -O \
+            https://root.cern/download/${__filename}
+
+        if [ -f "${__filename}" ]; then
+          output_exit_on_error ${_logFile} \
+            tar xvf ${__filename} --transform "s%root%${__filename_0}/%"
+        fi
+      fi
+      if [[ "$_skipBuild" == "1" ]]; then
+        warn "Ignoring option _skipBuild=${_skipBuild}."
+      fi
+      cd ${_pwd}/${_name}
+      output_exit_on_error ${_logFile} \
+        cp -r * ${_installPrefix}
+    else
+      info "  ->"
+      info "  -> Test run"
+      info "  ->"
+    fi
+  else
+    info "  ...skip"
+  fi
+}
+
 curl_configure_build() {
   local _name=$1
   local _curlCommand=$2
@@ -517,6 +570,7 @@ git_cmake_build \
    -Dssl=FALSE \
    -Dx11=FALSE \
   "
+root_directDownload "root_v6.34.02.Linux-ubuntu24.04-x86_64-gcc13.3"
 
 #-------------------------------------------------------------------------------
 # paraview
