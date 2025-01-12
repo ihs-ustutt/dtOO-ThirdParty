@@ -54,3 +54,8 @@ jobs:
             docker push \
               --all-tags \
               ${DOCKER_USERNAME}/dtoo-base-ubuntu
+workflows:
+  build:
+    jobs:
+      - build
+      - build-ubuntu
