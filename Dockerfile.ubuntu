@@ -39,7 +39,7 @@ RUN apt-get install -y \
   libocct-modeling-algorithms-7.8 libocct-modeling-data-7.8 libocct-ocaf-7.8 \
   libocct-visualization-7.8
 
-RUN bash /dtOO-ThirdParty/add-debian-repo.sh
+RUN curl -s https://dl.openfoam.com/add-debian-repo.sh | bash
 RUN apt-get update
 RUN apt-get install -y \
   openfoam2312 openfoam2312-common openfoam2312-default \
