@@ -39,7 +39,12 @@ RUN apt-get install -y \
   libocct-modeling-algorithms-7.8 libocct-modeling-data-7.8 libocct-ocaf-7.8 \
   libocct-visualization-7.8
 
-RUN curl -s https://dl.openfoam.com/add-debian-repo.sh | bash
+RUN \
+  echo "deb [arch=amd64] https://dl.openfoam.com/repos/deb noble main" \
+  > /etc/apt/sources.list.d/openfoam.list
+RUN \
+  cat /dtOO-ThirdParty/openfoam_pubkey.gpg \
+  | gpg --dearmor > /etc/apt/trusted.gpg.d/openfoam.gpg
 RUN apt-get update
 RUN apt-get install -y \
   openfoam2312 openfoam2312-common openfoam2312-default \
