@@ -33,8 +33,8 @@ RUN zypper -n install \
   gzip \
   freetype2-devel tk-devel Mesa-libGL-devel fontconfig-devel \
   libXext-devel libXmu-devel libXi-devel \
-  python311 python311-devel python311-numpy \
-  python311-pip  \
+  python312 python312-devel \
+  python312-pip  \
   python python-devel \
   vim \
   gcc12-fortran gcc12-c++ gcc12 \
@@ -71,9 +71,10 @@ RUN touch /root/.bashrc
 RUN echo "source /usr/lib/openfoam/openfoam2312/etc/bashrc" >> /root/.bashrc
 ENV FOAMFINE_DIR=/foamFine
 
-RUN pip3.11 install pyfoam
-RUN pip3.11 install oslo.concurrency 
-RUN pip3.11 install scikit-learn
+RUN pip3.12 install numpy
+RUN pip3.12 install pyfoam
+RUN pip3.12 install oslo.concurrency 
+RUN pip3.12 install scikit-learn
 
 ENV PATH=/dtOO-install/bin:$PATH
 
