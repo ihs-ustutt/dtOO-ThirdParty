@@ -20,7 +20,7 @@ jobs:
               --target base-prod \
               -t ${DOCKER_USERNAME}/dtoo-base:${GIT_REV} \
               -t ${DOCKER_USERNAME}/dtoo-base:latest \
-              -t ${DOCKER_USERNAME}/dtoo:${DOCKER_TAG} \
+              -t ${DOCKER_USERNAME}/dtoo-base:${DOCKER_TAG} \
               .
             echo "$DOCKER_PASSWORD" \
               | docker login -u "$DOCKER_USERNAME" --password-stdin
