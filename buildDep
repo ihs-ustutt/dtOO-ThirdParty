@@ -578,7 +578,7 @@ root_directDownload "root_v6.34.02.Linux-ubuntu24.04-x86_64-gcc13.3"
 git_cmake_build \
   "paraview" \
   "https://github.com/Kitware/ParaView.git" \
-  "v5.12.1" \
+  "v5.13.2" \
   "\
   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   -DPARAVIEW_USE_QTHELP=OFF \
