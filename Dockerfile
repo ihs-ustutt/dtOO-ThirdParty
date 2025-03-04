@@ -39,7 +39,6 @@ RUN zypper -n install \
   vim \
   gcc12-fortran gcc12-c++ gcc12 \
   gmp-devel \
-  root6 root6-devel Minuit2-devel \
   muparser-devel \
   cgal-devel \
   occt-devel \

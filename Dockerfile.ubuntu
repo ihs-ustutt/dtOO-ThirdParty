@@ -65,9 +65,6 @@ RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openmesh -tee
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openvolumemesh -tee
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o gmsh -tee
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o moab -tee
-RUN \
-  bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} \
-  -o root_v6.34.02.Linux-ubuntu24.04-x86_64-gcc13.3 -tee
 WORKDIR /foamFine/of
 RUN . /usr/lib/openfoam/openfoam2312/etc/bashrc && wmake all
 RUN ln -s /root/OpenFOAM/user-2312 /root/OpenFOAM/root-2312
