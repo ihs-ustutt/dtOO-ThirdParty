@@ -476,7 +476,7 @@ export CASROOT=${_installPrefix}
 git_cmake_build \
   "gmsh" \
   "https://gitlab.onelab.info/gmsh/gmsh.git" \
-  "gmsh_4_13_1" \
+  "gmsh_4_14_0" \
   "\
   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   -DENABLE_BUILD_SHARED=ON \
@@ -504,7 +504,6 @@ git_cmake_build \
   -DBUILD_TESTING=OFF \
   -DENABLE_WRAP_PYTHON=ON \
   -DGMSHPY_INSTALL_DIRECTORY=${_installPrefix}/tools/gmshpy \
-  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
   "
   
 #-------------------------------------------------------------------------------
