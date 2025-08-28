@@ -390,7 +390,7 @@ done
 git_cmake_build \
   "cgns" \
   "https://github.com/CGNS/CGNS" \
-  "" \
+  "v4.5.0" \
   "\
   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   -DCGNS_USE_SHARED=ON \
@@ -426,7 +426,10 @@ git_cmake_build \
   "openmesh" \
   "https://gitlab.vci.rwth-aachen.de:9000/OpenMesh/OpenMesh.git" \
   "OpenMesh-8.1" \
-  "-DCMAKE_INSTALL_PREFIX=${_installPrefix}"
+  "\
+   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
+   -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  "
   
 #-------------------------------------------------------------------------------
 # OpenVolumeMesh
@@ -438,6 +441,7 @@ git_cmake_build \
   "\
   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
   "
   
 #-------------------------------------------------------------------------------
@@ -500,6 +504,7 @@ git_cmake_build \
   -DBUILD_TESTING=OFF \
   -DENABLE_WRAP_PYTHON=ON \
   -DGMSHPY_INSTALL_DIRECTORY=${_installPrefix}/tools/gmshpy \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
   "
   
 #-------------------------------------------------------------------------------
@@ -508,7 +513,7 @@ git_cmake_build \
 git_cmake_build \
   "moab" \
   "https://bitbucket.org/fathomteam/moab.git" \
-  "5.5.1" \
+  "84f4f69" \
   "\
   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   -DENABLE_CGM=OFF \
