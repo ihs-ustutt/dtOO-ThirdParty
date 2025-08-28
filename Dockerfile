@@ -37,14 +37,14 @@ RUN zypper -n install \
   python312-pip  \
   python python-devel \
   vim \
-  gcc12-fortran gcc12-c++ gcc12 \
+  gcc12-fortran gcc12-c++ gcc12 ccache \
   gmp-devel \
   muparser-devel \
   cgal-devel \
   occt-devel \
-  openfoam2312 openfoam2312-common openfoam2312-default \
-  openfoam2312-devel openfoam2312-doc openfoam2312-tools \
-  openfoam2312-tutorials \
+  openfoam2406 openfoam2406-common openfoam2406-default \
+  openfoam2406-devel openfoam2406-doc openfoam2406-tools \
+  openfoam2406-tutorials \
   nlohmann_json-devel
 
 ENV CC=/usr/bin/gcc-12
@@ -63,11 +63,11 @@ RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o gmsh -tee
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o moab -tee
 
 WORKDIR /foamFine/of
-RUN . /usr/lib/openfoam/openfoam2312/etc/bashrc && wmake all
-RUN ln -s /root/OpenFOAM/user-2312 /root/OpenFOAM/root-2312
+RUN . /usr/lib/openfoam/openfoam2406/etc/bashrc && wmake all
+RUN ln -s /root/OpenFOAM/user-2406 /root/OpenFOAM/root-2406
 
 RUN touch /root/.bashrc
-RUN echo "source /usr/lib/openfoam/openfoam2312/etc/bashrc" >> /root/.bashrc
+RUN echo "source /usr/lib/openfoam/openfoam2406/etc/bashrc" >> /root/.bashrc
 ENV FOAMFINE_DIR=/foamFine
 
 RUN pip3.12 install numpy

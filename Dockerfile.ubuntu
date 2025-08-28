@@ -17,7 +17,7 @@ RUN apt-get update
 RUN apt-get install -y \
   ssh git \
   cmake make automake autogen autoconf libtool patch \
-  build-essential \
+  build-essential ccache \
   swig \
   libblas-dev liblapack-dev libeigen3-dev gfortran \
   curl \
@@ -47,9 +47,9 @@ RUN \
   | gpg --dearmor > /etc/apt/trusted.gpg.d/openfoam.gpg
 RUN apt-get update
 RUN apt-get install -y \
-  openfoam2312 openfoam2312-common openfoam2312-default \
-  openfoam2312-dev openfoam2312-source openfoam2312-tools \
-  openfoam2312-tutorials
+  openfoam2406 openfoam2406-common openfoam2406-default \
+  openfoam2406-dev openfoam2406-source openfoam2406-tools \
+  openfoam2406-tutorials
 
 ENV CC=/usr/bin/gcc
 ENV CXX=/usr/bin/g++
@@ -66,11 +66,11 @@ RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openvolumemesh -tee
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o gmsh -tee
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o moab -tee
 WORKDIR /foamFine/of
-RUN . /usr/lib/openfoam/openfoam2312/etc/bashrc && wmake all
-RUN ln -s /root/OpenFOAM/user-2312 /root/OpenFOAM/root-2312
+RUN . /usr/lib/openfoam/openfoam2406/etc/bashrc && wmake all
+RUN ln -s /root/OpenFOAM/user-2406 /root/OpenFOAM/root-2406
 
-RUN echo "source /usr/lib/openfoam/openfoam2312/etc/bashrc" >> /root/.profile
-RUN echo "source /usr/lib/openfoam/openfoam2312/etc/bashrc" >> /root/.bashrc
+RUN echo "source /usr/lib/openfoam/openfoam2406/etc/bashrc" >> /root/.profile
+RUN echo "source /usr/lib/openfoam/openfoam2406/etc/bashrc" >> /root/.bashrc
 ENV FOAMFINE_DIR=/foamFine
 
 ENV PATH=/root/.local/bin:$PATH
