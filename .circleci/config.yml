@@ -12,6 +12,7 @@ jobs:
           name: Build and Push Docker image
           command: |
             GIT_REV=`git rev-parse HEAD`
+            GIT_BRANCH=`git rev-parse --abbrev-ref HEAD`
             DOCKER_TAG=unstable
             if [[ "$GIT_BRANCH" == "main" ]]; then DOCKER_TAG=stable ; fi
             docker build \
