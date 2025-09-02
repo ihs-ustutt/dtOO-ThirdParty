@@ -5,6 +5,9 @@ jobs:
     docker:
       - image: "cimg/base:current"
     resource_class: medium
+    parameters:
+      oss:
+        type: string
     steps:
       - checkout
       - setup_remote_docker
@@ -19,44 +22,20 @@ jobs:
               --build-arg "GIT_REV=${GIT_REV}" \
               --progress=plain \
               --target base-prod \
-              -t ${DOCKER_USERNAME}/dtoo-base-opensuse:${GIT_REV} \
-              -t ${DOCKER_USERNAME}/dtoo-base-opensuse:latest \
-              -t ${DOCKER_USERNAME}/dtoo-base-opensuse:${DOCKER_TAG} \
+              -t ${DOCKER_USERNAME}/dtoo-base-<< parameters.oss >>:${GIT_REV} \
+              -t ${DOCKER_USERNAME}/dtoo-base-<< parameters.oss >>:latest \
+              -t ${DOCKER_USERNAME}/dtoo-base-<< parameters.oss >>:${DOCKER_TAG} \
+              -f Dockerfile.<< parameters.oss >> \
               .
             echo "$DOCKER_PASSWORD" \
               | docker login -u "$DOCKER_USERNAME" --password-stdin
             docker push \
               --all-tags \
-              ${DOCKER_USERNAME}/dtoo-base-opensuse
-  build-ubuntu:
-    docker:
-      - image: "cimg/base:current"
-    resource_class: medium
-    steps:
-      - checkout
-      - setup_remote_docker
-      - run:
-          name: Build and Push Docker image
-          command: |
-            GIT_REV=`git rev-parse HEAD`
-            DOCKER_TAG=unstable
-            if [[ "$GIT_BRANCH" == "main" ]]; then DOCKER_TAG=stable ; fi
-            docker build \
-              --build-arg "GIT_REV=${GIT_REV}" \
-              --progress=plain \
-              --target base-prod \
-              -t ${DOCKER_USERNAME}/dtoo-base-ubuntu:${GIT_REV} \
-              -t ${DOCKER_USERNAME}/dtoo-base-ubuntu:latest \
-              -t ${DOCKER_USERNAME}/dtoo-base-ubuntu:${DOCKER_TAG} \
-              -f Dockerfile.ubuntu \
-              .
-            echo "$DOCKER_PASSWORD" \
-              | docker login -u "$DOCKER_USERNAME" --password-stdin
-            docker push \
-              --all-tags \
-              ${DOCKER_USERNAME}/dtoo-base-ubuntu
+              ${DOCKER_USERNAME}/dtoo-base-<< parameters.oss >>
 workflows:
   wf-build:
     jobs:
-      - build
-      - build-ubuntu
+      - build:
+        matrix:
+          parameters:
+            oss: [ "opensuse", "ubuntu" ]
