@@ -71,7 +71,7 @@ RUN echo "source /usr/lib/openfoam/openfoam2406/etc/bashrc" >> /root/.bashrc
 ENV FOAMFINE_DIR=/foamFine
 
 RUN pip3.12 install numpy
-RUN pip3.12 install pyfoam
+RUN pip3.12 install foamlib
 RUN pip3.12 install oslo.concurrency 
 RUN pip3.12 install scikit-learn
 
@@ -99,38 +99,3 @@ COPY --from=base /sys             /sys
 COPY --from=base /tmp             /tmp
 COPY --from=base /usr             /usr
 COPY --from=base /var             /var
-
-FROM base AS ext
-COPY --from=base / /
-RUN zypper -n install \
-  libQt5OpenGL-devel libQt5Widgets-devel libQt5Network-devel \
-  libQt5Svg-devel libqt5-qtxmlpatterns-devel libqt5-qttools-devel
-
-WORKDIR /dtOO-ThirdParty
-ARG NCPU
-RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o paraview -tee
-WORKDIR /
-
-FROM ext AS ext-prod
-COPY --from=base /bin             /bin
-COPY --from=base /boot            /boot
-COPY --from=base /dev             /dev
-COPY --from=base /dtOO-install    /dtOO-install
-COPY --from=base /etc             /etc
-COPY --from=base /foamFine        /foamFine
-COPY --from=base /home            /home
-COPY --from=base /lib             /lib
-COPY --from=base /lib64           /lib64
-COPY --from=base /mnt             /mnt
-COPY --from=base /opt             /opt
-COPY --from=base /proc            /proc
-COPY --from=base /root            /root
-COPY --from=base /run             /run
-COPY --from=base /sbin            /sbin
-COPY --from=base /selinux         /selinux
-COPY --from=base /srv             /srv
-COPY --from=base /sys             /sys
-COPY --from=base /tmp             /tmp
-COPY --from=base /usr             /usr
-COPY --from=base /var             /var
-WORKDIR /
