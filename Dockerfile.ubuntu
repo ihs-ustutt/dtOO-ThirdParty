@@ -78,7 +78,7 @@ ENV PATH=/root/.local/bin:$PATH
 RUN python3 -m venv ~/dtoo-py 
 RUN echo "source ~/dtoo-py/bin/activate" >> /root/.profile
 RUN echo "source ~/dtoo-py/bin/activate" >> /root/.bashrc
-RUN . ~/dtoo-py/bin/activate && pip install pyfoam
+RUN . ~/dtoo-py/bin/activate && pip install foamlib
 RUN . ~/dtoo-py/bin/activate && pip install oslo.concurrency 
 RUN . ~/dtoo-py/bin/activate && pip install scikit-learn
 
