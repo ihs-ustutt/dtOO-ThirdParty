@@ -449,8 +449,8 @@ git_cmake_build \
 #-------------------------------------------------------------------------------
 git_cmake_build \
   "occt" \
-  "https://git.dev.opencascade.org/repos/occt.git" \
-  "V7_8_1" \
+  "https://github.com/Open-Cascade-SAS/OCCT" \
+  "V7_9_0" \
   "\
     -DINSTALL_DIR=${_installPrefix} \
     -DBUILD_RELEASE_DISABLE_EXCEPTIONS=FALSE \
@@ -462,11 +462,12 @@ git_cmake_build \
 git_cmake_build \
   "pythonocc-core" \
   "https://github.com/tpaviot/pythonocc-core.git" \
-  "7.8.1" \
+  "7.9.0" \
   "\
     -DOCCT_INCLUDE_DIR=${_installPrefix}/include/opencascade \
     -DOCCT_LIBRARY_DIR=${_installPrefix}/lib \
     -DPYTHONOCC_INSTALL_DIRECTORY=${_installPrefix}/tools/OCC \
+    -DPYTHONOCC_MESHDS_NUMPY=ON \
   "
 
 #-------------------------------------------------------------------------------
@@ -476,7 +477,7 @@ export CASROOT=${_installPrefix}
 git_cmake_build \
   "gmsh" \
   "https://gitlab.onelab.info/gmsh/gmsh.git" \
-  "gmsh_4_14_0" \
+  "gmsh_4_15_0" \
   "\
   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   -DENABLE_BUILD_SHARED=ON \
@@ -500,7 +501,7 @@ git_cmake_build \
   -DENABLE_OCC_CAF=OFF \
   -DENABLE_QUADTRI=OFF \
   -DENABLE_QUADMESHINGTOOLS=OFF \
-  -DENABLE_WINSLOWUNTANGLER=OFF \
+  -DENABLE_WINSLOWUNTANGLER=ON \
   -DBUILD_TESTING=OFF \
   -DENABLE_WRAP_PYTHON=ON \
   -DGMSHPY_INSTALL_DIRECTORY=${_installPrefix}/tools/gmshpy \
