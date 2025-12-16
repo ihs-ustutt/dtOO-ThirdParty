@@ -35,9 +35,9 @@ RUN apt-get install -y \
   libocct-data-exchange-dev libocct-draw-dev libocct-foundation-dev \
   libocct-modeling-algorithms-dev \
   libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev \
-  libocct-data-exchange-7.8 libocct-draw-7.8 libocct-foundation-7.8 \
-  libocct-modeling-algorithms-7.8 libocct-modeling-data-7.8 libocct-ocaf-7.8 \
-  libocct-visualization-7.8
+  libocct-data-exchange-7.9 libocct-draw-7.9 libocct-foundation-7.9 \
+  libocct-modeling-algorithms-7.9 libocct-modeling-data-7.9 libocct-ocaf-7.9 \
+  libocct-visualization-7.9
 
 RUN \
   echo "deb [arch=amd64] https://dl.openfoam.com/repos/deb noble main" \
