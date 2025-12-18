@@ -41,7 +41,6 @@ RUN zypper -n install \
   gmp-devel \
   muparser-devel \
   cgal-devel \
-  occt-devel \
   openfoam2406 openfoam2406-common openfoam2406-default \
   openfoam2406-devel openfoam2406-doc openfoam2406-tools \
   openfoam2406-tutorials \
@@ -61,6 +60,8 @@ RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openmesh -tee
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openvolumemesh -tee
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o gmsh -tee
 RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o moab -tee
+RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o occt -tee
+RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o pythonocc-core -tee
 
 WORKDIR /foamFine/of
 RUN . /usr/lib/openfoam/openfoam2406/etc/bashrc && wmake all
