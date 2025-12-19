@@ -68,6 +68,7 @@ git_cmake_build() {
   local _checkoutCommand=$3
   local _cmakeConf=$4
   local _addGitCommand="${5}"
+  local _addPostCommand="${6}"
 
   [[ "$_listDep" == 1 ]] && output "$_name -> ${_name}@<CMAKE-OPTION>" && return
   
@@ -81,6 +82,7 @@ git_cmake_build() {
     info "( L ) _checkoutCommand : $_checkoutCommand"
     info "( L ) _cmakeConf       : $_cmakeConf"
     info "( L ) _addGitCommand   : $_addGitCommand"
+    info "( L ) _addPostCommand  : $_addPostCommand"
   
    
     if [[ "$_testRun" == 0 ]]; then
@@ -122,7 +124,11 @@ git_cmake_build() {
       fi
       cd ${_pwd}/build_$_name
       output_exit_on_error ${_logFile} \
-        make -j${_nProcs} install 
+        make -j${_nProcs} install
+        if [ ! -z "$_addPostCommand" ]; then
+          output_exit_on_error ${_logFile} \
+            eval "$_addPostCommand"
+        fi
     else
       info "  ->"
       info "  -> Test run"
@@ -468,6 +474,16 @@ git_cmake_build \
     -DOCCT_LIBRARY_DIR=${_installPrefix}/lib \
     -DPYTHONOCC_INSTALL_DIRECTORY=${_installPrefix}/tools/OCC \
     -DPYTHONOCC_MESHDS_NUMPY=ON \
+  "\
+  ""\
+  "\
+    mkdir \
+      -p ${_installPrefix}/include/pythonocc-core \
+    && \
+    cp \
+      -r  \
+      ${_pwd}/pythonocc-core/src/SWIG_files \
+      ${_installPrefix}/include/pythonocc-core/SWIG_files\
   "
 
 #-------------------------------------------------------------------------------

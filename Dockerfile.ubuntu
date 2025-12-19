@@ -9,7 +9,7 @@ ARG GIT_REV=main
 RUN git checkout ${GIT_REV}
 WORKDIR /
 
-FROM ubuntu:24.04 AS base
+FROM ubuntu:24.04 AS prebase
 ARG CBASE=
 COPY --from=repo /dtOO-ThirdParty${CBASE} /dtOO-ThirdParty
 
@@ -28,7 +28,7 @@ RUN apt-get install -y \
   libmuparser-dev \
   libgsl-dev \
   software-properties-common \
-  libfreetype-dev
+  libfreetype-dev tk-dev tcl-dev
 
 RUN \
   echo "deb [arch=amd64] https://dl.openfoam.com/repos/deb noble main" \
@@ -47,22 +47,38 @@ ENV CXX=/usr/bin/g++
 ENV FC=/usr/bin/gfortran
 
 RUN git clone https://github.com/ihs-ustutt/foamFine.git
-
-RUN python3 -m venv ~/dtoo-py 
-RUN echo "source ~/dtoo-py/bin/activate" >> /root/.profile
-RUN echo "source ~/dtoo-py/bin/activate" >> /root/.bashrc
-RUN . ~/dtoo-py/bin/activate && pip install swig==4.3.1
-
-WORKDIR /dtOO-ThirdParty
-ENV DTOO_EXTERNLIBS=/dtOO-install
 ARG NCPU=2
+ENV DTOO_EXTERNLIBS=/dtOO-install
+RUN mkdir ${DTOO_EXTERNLIBS}
+WORKDIR /dtOO-ThirdParty
+
+#-cgns
+FROM prebase AS base-cgns
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o cgns -tee
+#-openmesh
+FROM prebase AS base-openmesh
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openmesh -tee
+#-openvolumemesh
+FROM prebase AS base-openvolumemesh
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openvolumemesh -tee
+#-gmsh
+FROM prebase AS base-gmsh
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o gmsh -tee
+#-moab
+FROM base-cgns AS base-moab
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o moab -tee
+#-occt
+FROM prebase AS base-occt
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o occt -tee
-RUN . ~/dtoo-py/bin/activate && bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o pythonocc-core -tee
+RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o pythonocc-core -tee
+
+FROM prebase AS base
+COPY --from=base-cgns           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-openmesh       ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-openvolumemesh ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-gmsh           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-moab           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-occt           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
 
 WORKDIR /foamFine/of
 RUN . /usr/lib/openfoam/openfoam2406/etc/bashrc && wmake all
@@ -74,6 +90,9 @@ ENV FOAMFINE_DIR=/foamFine
 
 ENV PATH=/root/.local/bin:$PATH
 
+RUN python3 -m venv ~/dtoo-py 
+RUN echo "source ~/dtoo-py/bin/activate" >> /root/.profile
+RUN echo "source ~/dtoo-py/bin/activate" >> /root/.bashrc
 RUN . ~/dtoo-py/bin/activate && pip install foamlib
 RUN . ~/dtoo-py/bin/activate && pip install oslo.concurrency 
 RUN . ~/dtoo-py/bin/activate && pip install scikit-learn
