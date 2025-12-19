@@ -54,6 +54,7 @@ RUN echo "source ~/dtoo-py/bin/activate" >> /root/.bashrc
 RUN . ~/dtoo-py/bin/activate && pip install foamlib
 RUN . ~/dtoo-py/bin/activate && pip install oslo.concurrency 
 RUN . ~/dtoo-py/bin/activate && pip install scikit-learn
+RUN . ~/dtoo-py/bin/activate && pip install swig==4.3.1
 
 ARG NCPU=8
 ENV DTOO_EXTERNLIBS=/dtOO-install
