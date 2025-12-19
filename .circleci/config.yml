@@ -4,7 +4,7 @@ jobs:
   build:
     docker:
       - image: "cimg/base:current"
-    resource_class: xlarge
+    resource_class: large
     parameters:
       oss:
         type: string
