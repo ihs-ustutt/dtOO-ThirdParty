@@ -47,7 +47,7 @@ ENV CXX=/usr/bin/g++
 ENV FC=/usr/bin/gfortran
 
 RUN git clone https://github.com/ihs-ustutt/foamFine.git
-ARG NCPU=2
+ARG NCPU=4
 ENV DTOO_EXTERNLIBS=/dtOO-install
 RUN mkdir ${DTOO_EXTERNLIBS}
 WORKDIR /dtOO-ThirdParty

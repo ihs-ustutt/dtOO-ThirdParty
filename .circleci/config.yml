@@ -4,7 +4,7 @@ jobs:
   build:
     docker:
       - image: "cimg/base:current"
-    resource_class: medium
+    resource_class: large
     parameters:
       oss:
         type: string
@@ -21,6 +21,7 @@ jobs:
             docker build \
               --build-arg "GIT_REV=${GIT_REV}" \
               --target base-prod \
+              --progress=plain \
               -t ${DOCKER_USERNAME}/dtoo-base-<< parameters.oss >>:${GIT_REV} \
               -t ${DOCKER_USERNAME}/dtoo-base-<< parameters.oss >>:latest \
               -t ${DOCKER_USERNAME}/dtoo-base-<< parameters.oss >>:${DOCKER_TAG} \
