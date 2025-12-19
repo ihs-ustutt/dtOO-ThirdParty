@@ -20,7 +20,6 @@ jobs:
             if [[ "$GIT_BRANCH" == "main" ]]; then DOCKER_TAG=stable ; fi
             docker build \
               --build-arg "GIT_REV=${GIT_REV}" \
-              --progress=plain \
               --target base-prod \
               -t ${DOCKER_USERNAME}/dtoo-base-<< parameters.oss >>:${GIT_REV} \
               -t ${DOCKER_USERNAME}/dtoo-base-<< parameters.oss >>:latest \
