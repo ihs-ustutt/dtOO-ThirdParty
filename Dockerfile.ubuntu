@@ -28,7 +28,8 @@ RUN apt-get install -y \
   libmuparser-dev \
   libgsl-dev \
   software-properties-common \
-  libfreetype-dev tk-dev tcl-dev
+  libfreetype-dev tk-dev tcl-dev \
+  rapidjson-dev
 
 RUN \
   echo "deb [arch=amd64] https://dl.openfoam.com/repos/deb noble main" \
@@ -46,8 +47,15 @@ ENV CC=/usr/bin/gcc
 ENV CXX=/usr/bin/g++
 ENV FC=/usr/bin/gfortran
 
-RUN git clone https://github.com/ihs-ustutt/foamFine.git
-ARG NCPU=4
+ENV PATH=/root/.local/bin:$PATH
+RUN python3 -m venv ~/dtoo-py 
+RUN echo "source ~/dtoo-py/bin/activate" >> /root/.profile
+RUN echo "source ~/dtoo-py/bin/activate" >> /root/.bashrc
+RUN . ~/dtoo-py/bin/activate && pip install foamlib
+RUN . ~/dtoo-py/bin/activate && pip install oslo.concurrency 
+RUN . ~/dtoo-py/bin/activate && pip install scikit-learn
+
+ARG NCPU=8
 ENV DTOO_EXTERNLIBS=/dtOO-install
 RUN mkdir ${DTOO_EXTERNLIBS}
 WORKDIR /dtOO-ThirdParty
@@ -80,6 +88,8 @@ COPY --from=base-gmsh           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
 COPY --from=base-moab           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
 COPY --from=base-occt           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
 
+WORKDIR /
+RUN git clone https://github.com/ihs-ustutt/foamFine.git
 WORKDIR /foamFine/of
 RUN . /usr/lib/openfoam/openfoam2406/etc/bashrc && wmake all
 RUN ln -s /root/OpenFOAM/user-2406 /root/OpenFOAM/root-2406
@@ -88,16 +98,8 @@ RUN echo "source /usr/lib/openfoam/openfoam2406/etc/bashrc" >> /root/.profile
 RUN echo "source /usr/lib/openfoam/openfoam2406/etc/bashrc" >> /root/.bashrc
 ENV FOAMFINE_DIR=/foamFine
 
-ENV PATH=/root/.local/bin:$PATH
-
-RUN python3 -m venv ~/dtoo-py 
-RUN echo "source ~/dtoo-py/bin/activate" >> /root/.profile
-RUN echo "source ~/dtoo-py/bin/activate" >> /root/.bashrc
-RUN . ~/dtoo-py/bin/activate && pip install foamlib
-RUN . ~/dtoo-py/bin/activate && pip install oslo.concurrency 
-RUN . ~/dtoo-py/bin/activate && pip install scikit-learn
-
 ENV PATH=/dtOO-install/bin:$PATH
 
 FROM base AS base-prod
 RUN rm -rf /dtOO-ThirdParty/ThirdParty/*
+WORKDIR /
