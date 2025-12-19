@@ -77,8 +77,8 @@ FROM base-cgns AS base-moab
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o moab -tee
 #-occt
 FROM prebase AS base-occt
-RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o occt -tee
-RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o pythonocc-core -tee
+RUN . ~/dtoo-py/bin/activate && bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o occt -tee
+RUN . ~/dtoo-py/bin/activate && bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o pythonocc-core -tee
 
 FROM prebase AS base
 COPY --from=base-cgns           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
