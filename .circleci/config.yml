@@ -32,7 +32,7 @@ jobs:
             docker push \
               --all-tags \
               ${DOCKER_USERNAME}/dtoo-base-<< parameters.oss >>
-   dtoo:
+  dtoo:
     docker:
       - image: "cimg/base:current"
     resource_class: small
@@ -43,7 +43,7 @@ jobs:
         type: string
     steps:
       - checkout
-      - setup_remote_docker
+      - setup_remote_docker:
           docker_layer_caching: true
       - run:
           name: Build and Push Docker image
