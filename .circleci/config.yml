@@ -35,55 +35,150 @@ jobs:
   dtoo:
     docker:
       - image: "cimg/base:current"
-    resource_class: small
+    resource_class: large
     parameters:
-      oss:
+      00targ:
         type: string
-      targ:
+      10oss:
         type: string
     steps:
       - checkout
       - setup_remote_docker:
-          docker_layer_caching: true
+          docker_layer_caching: false
       - run:
           name: Build and Push Docker image
           command: |
-            DOCKER_PRETAG=dtoo-<< parameters.targ >>
+            DOCKER_PRETAG=dtoo-<< parameters.00targ >>
             GIT_REV=`git rev-parse HEAD`
             GIT_BRANCH=`git rev-parse --abbrev-ref HEAD`
             DOCKER_TAG=unstable
             if [[ "$GIT_BRANCH" == "main" ]]; then DOCKER_TAG=stable ; fi
             docker build \
               --build-arg "GIT_REV=${GIT_REV}" \
-              --target << parameters.targ >> \
+              --build-arg "CONTAINER_REPO=atismer/dtoo-" \
+              --build-arg "CONTAINER_TAG=-<< parameters.10oss >>:${GIT_REV}" \
+              --build-arg "NCPU=4" \
+              --target << parameters.00targ >> \
               --progress=plain \
-              -t ${DOCKER_USERNAME}/${DOCKER_PRETAG}-<< parameters.oss >>:${GIT_REV} \
-              -t ${DOCKER_USERNAME}/${DOCKER_PRETAG}-<< parameters.oss >>:latest \
-              -t ${DOCKER_USERNAME}/${DOCKER_PRETAG}-<< parameters.oss >>:${DOCKER_TAG} \
-              -f Dockerfile.<< parameters.oss >> \
+              -t ${DOCKER_USERNAME}/${DOCKER_PRETAG}-<< parameters.10oss >>:${GIT_REV} \
+              -t ${DOCKER_USERNAME}/${DOCKER_PRETAG}-<< parameters.10oss >>:latest \
+              -t ${DOCKER_USERNAME}/${DOCKER_PRETAG}-<< parameters.10oss >>:${DOCKER_TAG} \
+              -f Dockerfile.<< parameters.10oss >> \
               .
-              #echo "$DOCKER_PASSWORD" \
-              #  | docker login -u "$DOCKER_USERNAME" --password-stdin
-              #docker push \
-              #  --all-tags \
-              #  ${DOCKER_USERNAME}/dtoo-base-<< parameters.oss >>
+              echo "$DOCKER_PASSWORD" \
+                | docker login -u "$DOCKER_USERNAME" --password-stdin
+              docker push \
+                --all-tags \
+                ${DOCKER_USERNAME}/${DOCKER_PRETAG}-<< parameters.10oss >>
              
 workflows:
-  wf-build:
+  wf-ubuntu:
     jobs:
-      #- build:
-      #    matrix:
-      #      parameters:
-      #        oss: [ "opensuse", "ubuntu" ]
       - dtoo:
           matrix:
             parameters:
-              oss: [ "ubuntu" ]
-              targ: [ "repo" ]
+              00targ: [ "repo" ]
+              10oss: [ "ubuntu" ]
       - dtoo:
           matrix:
             parameters:
-              oss: [ "ubuntu" ]
-              targ: [ "prebase" ]
+              00targ: [ "prebase" ]
+              10oss: [ "ubuntu" ]
           requires:
-            - dtoo-ubuntu-repo
+            - dtoo-repo-ubuntu
+      - dtoo:
+          matrix:
+            parameters:
+              00targ: [ "base-cgns", "base-openmesh", "base-openvolumemesh", "base-occt", "base-gmsh" ]
+              10oss: [ "ubuntu" ]
+          requires:
+            - dtoo-prebase-ubuntu
+      - dtoo:
+          matrix:
+            parameters:
+              00targ: [ "base-moab" ]
+              10oss: [ "ubuntu" ]
+          requires:
+            - dtoo-base-cgns-ubuntu
+      - dtoo:
+          matrix:
+            parameters:
+              00targ: [ "base-pythonocc-core" ]
+              10oss: [ "ubuntu" ]
+          requires:
+            - dtoo-base-occt-ubuntu
+      - dtoo:
+          matrix:
+            parameters:
+              00targ: [ "base" ]
+              10oss: [ "ubuntu" ]
+          requires:
+            - dtoo-base-cgns-ubuntu
+            - dtoo-base-openmesh-ubuntu
+            - dtoo-base-openvolumemesh-ubuntu
+            - dtoo-base-gmsh-ubuntu
+            - dtoo-base-moab-ubuntu
+            - dtoo-base-occt-ubuntu
+            - dtoo-base-pythonocc-core-ubuntu
+      - dtoo:
+          matrix:
+            parameters:
+              00targ: [ "base-prod" ]
+              10oss: [ "ubuntu" ]
+          requires:
+            - dtoo-base-ubuntu
+  wf-opensuse:
+    jobs:
+      - dtoo:
+          matrix:
+            parameters:
+              00targ: [ "repo" ]
+              10oss: [ "opensuse" ]
+      - dtoo:
+          matrix:
+            parameters:
+              00targ: [ "prebase" ]
+              10oss: [ "opensuse" ]
+          requires:
+            - dtoo-repo-opensuse
+      - dtoo:
+          matrix:
+            parameters:
+              00targ: [ "base-cgns", "base-openmesh", "base-openvolumemesh", "base-occt", "base-gmsh" ]
+              10oss: [ "opensuse" ]
+          requires:
+            - dtoo-prebase-opensuse
+      - dtoo:
+          matrix:
+            parameters:
+              00targ: [ "base-moab" ]
+              10oss: [ "opensuse" ]
+          requires:
+            - dtoo-base-cgns-opensuse
+      - dtoo:
+          matrix:
+            parameters:
+              00targ: [ "base-pythonocc-core" ]
+              10oss: [ "opensuse" ]
+          requires:
+            - dtoo-base-occt-opensuse
+      - dtoo:
+          matrix:
+            parameters:
+              00targ: [ "base" ]
+              10oss: [ "opensuse" ]
+          requires:
+            - dtoo-base-cgns-opensuse
+            - dtoo-base-openmesh-opensuse
+            - dtoo-base-openvolumemesh-opensuse
+            - dtoo-base-gmsh-opensuse
+            - dtoo-base-moab-opensuse
+            - dtoo-base-occt-opensuse
+            - dtoo-base-pythonocc-core-opensuse
+      - dtoo:
+          matrix:
+            parameters:
+              00targ: [ "base-prod" ]
+              10oss: [ "opensuse" ]
+          requires:
+            - dtoo-base-opensuse             

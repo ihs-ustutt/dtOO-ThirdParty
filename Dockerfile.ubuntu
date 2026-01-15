@@ -1,5 +1,10 @@
 # syntax=docker/dockerfile:1.7-labs
 
+ARG CONTAINER_REPO=
+ARG CONTAINER_TAG=
+ARG CBASE=
+ARG NCPU=8
+
 FROM alpine/git AS repo
 WORKDIR /
 RUN git clone https://github.com/ihs-ustutt/dtOO-ThirdParty.git
@@ -9,16 +14,17 @@ ARG GIT_REV=main
 RUN git checkout ${GIT_REV}
 WORKDIR /
 
+FROM ${CONTAINER_REPO}repo${CONTAINER_TAG} AS repo_d
+
 FROM ubuntu:24.04 AS prebase
-ARG CBASE=
-COPY --from=repo /dtOO-ThirdParty${CBASE} /dtOO-ThirdParty
+ARG CBASE
+COPY --from=repo_d /dtOO-ThirdParty${CBASE} /dtOO-ThirdParty
 
 RUN apt-get update
 RUN apt-get install -y \
   ssh git \
   cmake make automake autogen autoconf libtool patch \
   build-essential ccache \
-  swig \
   libblas-dev liblapack-dev libeigen3-dev gfortran \
   curl \
   python3 python3-dev python3-numpy python3-venv python3-pip \
@@ -54,40 +60,57 @@ RUN echo "source ~/dtoo-py/bin/activate" >> /root/.bashrc
 RUN . ~/dtoo-py/bin/activate && pip install foamlib
 RUN . ~/dtoo-py/bin/activate && pip install oslo.concurrency 
 RUN . ~/dtoo-py/bin/activate && pip install scikit-learn
-RUN . ~/dtoo-py/bin/activate && pip install swig==4.3.1
+RUN . ~/dtoo-py/bin/activate && pip install swig==4.3.0
 
-ARG NCPU=8
 ENV DTOO_EXTERNLIBS=/dtOO-install
 RUN mkdir ${DTOO_EXTERNLIBS}
 WORKDIR /dtOO-ThirdParty
 
 #-cgns
-FROM prebase AS base-cgns
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-cgns
+ARG NCPU
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o cgns -tee
+#-moab
+FROM ${CONTAINER_REPO}base-cgns${CONTAINER_TAG} AS base-moab
+ARG NCPU
+RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o moab -tee
 #-openmesh
-FROM prebase AS base-openmesh
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-openmesh
+ARG NCPU
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openmesh -tee
 #-openvolumemesh
-FROM prebase AS base-openvolumemesh
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-openvolumemesh
+ARG NCPU
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openvolumemesh -tee
 #-gmsh
-FROM prebase AS base-gmsh
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-gmsh
+ARG NCPU
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o gmsh -tee
-#-moab
-FROM base-cgns AS base-moab
-RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o moab -tee
 #-occt
-FROM prebase AS base-occt
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-occt
+ARG NCPU
 RUN . ~/dtoo-py/bin/activate && bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o occt -tee
+#-pythonocc-core
+FROM ${CONTAINER_REPO}base-occt${CONTAINER_TAG} AS base-pythonocc-core
+ARG NCPU
 RUN . ~/dtoo-py/bin/activate && bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o pythonocc-core -tee
 
-FROM prebase AS base
-COPY --from=base-cgns           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
-COPY --from=base-openmesh       ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
-COPY --from=base-openvolumemesh ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
-COPY --from=base-gmsh           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
-COPY --from=base-moab           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
-COPY --from=base-occt           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+FROM ${CONTAINER_REPO}base-cgns${CONTAINER_TAG} AS base-cgns_d
+FROM ${CONTAINER_REPO}base-openmesh${CONTAINER_TAG} AS base-openmesh_d
+FROM ${CONTAINER_REPO}base-openvolumemesh${CONTAINER_TAG} AS base-openvolumemesh_d
+FROM ${CONTAINER_REPO}base-gmsh${CONTAINER_TAG} AS base-gmsh_d
+FROM ${CONTAINER_REPO}base-moab${CONTAINER_TAG} AS base-moab_d
+FROM ${CONTAINER_REPO}base-occt${CONTAINER_TAG} AS base-occt_d
+FROM ${CONTAINER_REPO}base-pythonocc-core${CONTAINER_TAG} AS base-pythonocc-core_d
+
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base
+COPY --from=base-cgns_d           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-openmesh_d       ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-openvolumemesh_d ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-gmsh_d           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-moab_d           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-occt_d           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-pythonocc-core_d ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
 
 WORKDIR /
 RUN git clone https://github.com/ihs-ustutt/foamFine.git
@@ -102,5 +125,5 @@ ENV FOAMFINE_DIR=/foamFine
 ENV PATH=/dtOO-install/bin:$PATH
 
 FROM base AS base-prod
-RUN rm -rf /dtOO-ThirdParty/ThirdParty/*
+#RUN rm -rf /dtOO-ThirdParty/ThirdParty/*
 WORKDIR /

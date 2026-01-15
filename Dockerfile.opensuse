@@ -1,3 +1,10 @@
+# syntax=docker/dockerfile:1.7-labs
+
+ARG CONTAINER_REPO=
+ARG CONTAINER_TAG=
+ARG CBASE=
+ARG NCPU=8
+
 FROM alpine/git AS repo
 WORKDIR /
 RUN git clone https://github.com/ihs-ustutt/dtOO-ThirdParty.git
@@ -7,8 +14,10 @@ ARG GIT_REV=main
 RUN git checkout ${GIT_REV}
 WORKDIR /
 
-FROM opensuse/leap:15.6 AS base
-ARG CBASE=
+FROM ${CONTAINER_REPO}repo${CONTAINER_TAG} AS repo_d
+
+FROM opensuse/leap:15.6 AS prebase
+ARG CBASE
 COPY --from=repo /dtOO-ThirdParty${CBASE} /dtOO-ThirdParty
 
 RUN zypper --non-interactive \
@@ -29,7 +38,6 @@ RUN zypper -n install \
   gsl-devel libboost_system1_66_0-devel libboost_timer1_66_0-devel \
   libboost_filesystem1_66_0-devel libboost_program_options1_66_0-devel \
   libboost_regex1_66_0-devel libboost_thread1_66_0-devel \
-  swig \
   gzip \
   freetype2-devel tk-devel Mesa-libGL-devel fontconfig-devel \
   libXext-devel libXmu-devel libXi-devel \
@@ -50,19 +58,65 @@ ENV CC=/usr/bin/gcc-12
 ENV CXX=/usr/bin/g++-12
 ENV FC=/usr/bin/gfortran-12
 
-RUN git clone https://github.com/ihs-ustutt/foamFine.git
+RUN pip3.12 install numpy
+RUN pip3.12 install foamlib
+RUN pip3.12 install oslo.concurrency 
+RUN pip3.12 install scikit-learn
+RUN pip3.12 install swig==4.3.0
 
-WORKDIR /dtOO-ThirdParty
+
 ENV DTOO_EXTERNLIBS=/dtOO-install
-ARG NCPU=4
-RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o cgns -tee
-RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openmesh -tee
-RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openvolumemesh -tee
-RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o gmsh -tee
-RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o moab -tee
-RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o occt -tee
-RUN sh buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o pythonocc-core -tee
+RUN mkdir ${DTOO_EXTERNLIBS}
+WORKDIR /dtOO-ThirdParty
 
+#-cgns
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-cgns
+ARG NCPU
+RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o cgns -tee
+#-moab
+FROM ${CONTAINER_REPO}base-cgns${CONTAINER_TAG} AS base-moab
+ARG NCPU
+RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o moab -tee
+#-openmesh
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-openmesh
+ARG NCPU
+RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openmesh -tee
+#-openvolumemesh
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-openvolumemesh
+ARG NCPU
+RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openvolumemesh -tee
+#-gmsh
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-gmsh
+ARG NCPU
+RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o gmsh -tee
+#-occt
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-occt
+ARG NCPU
+RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o occt -tee
+#-pythonocc-core
+FROM ${CONTAINER_REPO}base-occt${CONTAINER_TAG} AS base-pythonocc-core
+ARG NCPU
+RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o pythonocc-core -tee
+
+FROM ${CONTAINER_REPO}base-cgns${CONTAINER_TAG} AS base-cgns_d
+FROM ${CONTAINER_REPO}base-openmesh${CONTAINER_TAG} AS base-openmesh_d
+FROM ${CONTAINER_REPO}base-openvolumemesh${CONTAINER_TAG} AS base-openvolumemesh_d
+FROM ${CONTAINER_REPO}base-gmsh${CONTAINER_TAG} AS base-gmsh_d
+FROM ${CONTAINER_REPO}base-moab${CONTAINER_TAG} AS base-moab_d
+FROM ${CONTAINER_REPO}base-occt${CONTAINER_TAG} AS base-occt_d
+FROM ${CONTAINER_REPO}base-pythonocc-core${CONTAINER_TAG} AS base-pythonocc-core_d
+
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base
+COPY --from=base-cgns_d           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-openmesh_d       ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-openvolumemesh_d ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-gmsh_d           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-moab_d           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-occt_d           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-pythonocc-core_d ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+
+WORKDIR /
+RUN git clone https://github.com/ihs-ustutt/foamFine.git
 WORKDIR /foamFine/of
 RUN . /usr/lib/openfoam/openfoam2406/etc/bashrc && wmake all
 RUN ln -s /root/OpenFOAM/user-2406 /root/OpenFOAM/root-2406
@@ -71,32 +125,8 @@ RUN touch /root/.bashrc
 RUN echo "source /usr/lib/openfoam/openfoam2406/etc/bashrc" >> /root/.bashrc
 ENV FOAMFINE_DIR=/foamFine
 
-RUN pip3.12 install numpy
-RUN pip3.12 install foamlib
-RUN pip3.12 install oslo.concurrency 
-RUN pip3.12 install scikit-learn
-
 ENV PATH=/dtOO-install/bin:$PATH
 
 FROM base AS base-prod
-COPY --from=base /bin             /bin
-COPY --from=base /boot            /boot
-COPY --from=base /dev             /dev
-COPY --from=base /dtOO-install    /dtOO-install
-COPY --from=base /etc             /etc
-COPY --from=base /foamFine        /foamFine
-COPY --from=base /home            /home
-COPY --from=base /lib             /lib
-COPY --from=base /lib64           /lib64
-COPY --from=base /mnt             /mnt
-COPY --from=base /opt             /opt
-COPY --from=base /proc            /proc
-COPY --from=base /root            /root
-COPY --from=base /run             /run
-COPY --from=base /sbin            /sbin
-COPY --from=base /selinux         /selinux
-COPY --from=base /srv             /srv
-COPY --from=base /sys             /sys
-COPY --from=base /tmp             /tmp
-COPY --from=base /usr             /usr
-COPY --from=base /var             /var
+#RUN rm -rf /dtOO-ThirdParty/ThirdParty/*
+WORKDIR /
