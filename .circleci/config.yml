@@ -32,10 +32,58 @@ jobs:
             docker push \
               --all-tags \
               ${DOCKER_USERNAME}/dtoo-base-<< parameters.oss >>
+   dtoo:
+    docker:
+      - image: "cimg/base:current"
+    resource_class: small
+    parameters:
+      oss:
+        type: string
+      targ:
+        type: string
+    steps:
+      - checkout
+      - setup_remote_docker
+          docker_layer_caching: true
+      - run:
+          name: Build and Push Docker image
+          command: |
+            DOCKER_PRETAG=dtoo-<< parameters.targ >>
+            GIT_REV=`git rev-parse HEAD`
+            GIT_BRANCH=`git rev-parse --abbrev-ref HEAD`
+            DOCKER_TAG=unstable
+            if [[ "$GIT_BRANCH" == "main" ]]; then DOCKER_TAG=stable ; fi
+            docker build \
+              --build-arg "GIT_REV=${GIT_REV}" \
+              --target << parameters.targ >> \
+              --progress=plain \
+              -t ${DOCKER_USERNAME}/${DOCKER_PRETAG}-<< parameters.oss >>:${GIT_REV} \
+              -t ${DOCKER_USERNAME}/${DOCKER_PRETAG}-<< parameters.oss >>:latest \
+              -t ${DOCKER_USERNAME}/${DOCKER_PRETAG}-<< parameters.oss >>:${DOCKER_TAG} \
+              -f Dockerfile.<< parameters.oss >> \
+              .
+              #echo "$DOCKER_PASSWORD" \
+              #  | docker login -u "$DOCKER_USERNAME" --password-stdin
+              #docker push \
+              #  --all-tags \
+              #  ${DOCKER_USERNAME}/dtoo-base-<< parameters.oss >>
+             
 workflows:
   wf-build:
     jobs:
-      - build:
+      #- build:
+      #    matrix:
+      #      parameters:
+      #        oss: [ "opensuse", "ubuntu" ]
+      - dtoo:
           matrix:
             parameters:
-              oss: [ "opensuse", "ubuntu" ]
+              oss: [ "ubuntu" ]
+              targ: [ "repo" ]
+      - dtoo:
+          matrix:
+            parameters:
+              oss: [ "ubuntu" ]
+              targ: [ "prebase" ]
+          requires:
+            - dtoo-ubuntu-repo
