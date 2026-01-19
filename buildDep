@@ -57,8 +57,10 @@ output_exit_on_error () {
       || error "Failed: Please check ${_log_file}"
     dbg "\n\n[ ... ]\n\n$(tail ${_log_file})"
   else
+    set -o pipefail
     $_fun_call $@ | tee $_log_file 2>&1 \
       || error "  !\n  !\n  ! Failed: Please check ${_log_file}\n  !\n  !"
+    set +o pipefail
   fi
 }
 
@@ -80,10 +82,15 @@ git_cmake_build() {
     info "( G ) _skipDownload    : $_skipDownload"
     info "( G ) _extraCmake      : ${_extraCmake[$_name]}"
     info "( L ) _checkoutCommand : $_checkoutCommand"
+    info "( G ) _gitCheckout     : ${_gitCheckout[$_name]}"
     info "( L ) _cmakeConf       : $_cmakeConf"
     info "( L ) _addGitCommand   : $_addGitCommand"
     info "( L ) _addPostCommand  : $_addPostCommand"
   
+    if [ ! -z "${_gitCheckout[$_name]}" ]; then
+      _checkoutCommand="${_gitCheckout[$_name]}"
+      dbg "Reset variable _checkoutCommand : $_checkoutCommand" 
+    fi
    
     if [[ "$_testRun" == 0 ]]; then
       # create log file
@@ -270,6 +277,7 @@ _listDep=0
 _debug=false
 declare -A _extraCmake
 _tee=false
+declare -A _gitCheckout
 
 # no input given 
 [ $# -eq 0 ] && usage
@@ -285,7 +293,7 @@ args=$(\
     --long \
       help,skipBuild,skipDownload,testRun,listDep \
     --long \
-      installPrefix:,nProcs:,dep:,extra-cmake: \
+      installPrefix:,nProcs:,dep:,extra-cmake:,git-checkout: \
     --long \
       debug,tee \
     -- "$@"\
@@ -340,6 +348,25 @@ do
       ##      > --extra-cmake=pythonocc-core@-DPython_EXECUTABLE=/usr/bin/python3.11
       ##    
       ##    sets an extra make option for occt and pythonocc-core.
+    --git-checkout) \
+      __key=`echo $2 | sed 's/@.*$//g'` \
+      && \
+      __val=`echo $2 | sed 's/^.*@//g'` \
+      ; \
+      shift 2 \
+      ; \
+      _gitCheckout[${__key}]=${__val} ;;
+      ##  --git-checkout input
+      ##    Define git checkout string. The "@" sign is used as delimiter. A 
+      ##    call to this script by
+      ##      
+      ##      > sh buildDep \
+      ##      > -o all \
+      ##      > ...
+      ##      > --git-checkout=occt@V7_9_0 \
+      ##    
+      ##    switchs to branch V7_9_0 of occt and not the default one given 
+      ##    below in this script.
     --debug) _debug=true 
       warn "If you would like to debug as much as possible, then the debug option has to be the first one."
       shift
