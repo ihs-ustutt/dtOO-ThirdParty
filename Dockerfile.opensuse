@@ -52,7 +52,7 @@ RUN zypper -n install \
   openfoam2406 openfoam2406-common openfoam2406-default \
   openfoam2406-devel openfoam2406-doc openfoam2406-tools \
   openfoam2406-tutorials \
-  nlohmann_json-devel
+  nlohmann_json-devel rapidjson-devel
 
 ENV CC=/usr/bin/gcc-12
 ENV CXX=/usr/bin/g++-12
