@@ -85,7 +85,7 @@ RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openvolumemesh -tee
 #-gmsh
 FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-gmsh
 ARG NCPU
-RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o gmsh -tee
+RUN . ~/dtoo-py/bin/activate && bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o gmsh -tee
 #-occt
 FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-occt
 ARG NCPU
