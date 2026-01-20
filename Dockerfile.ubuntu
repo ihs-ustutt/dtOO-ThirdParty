@@ -1,5 +1,10 @@
 # syntax=docker/dockerfile:1.7-labs
 
+ARG CONTAINER_REPO=
+ARG CONTAINER_TAG=
+ARG CBASE=
+ARG NCPU=8
+
 FROM alpine/git AS repo
 WORKDIR /
 RUN git clone https://github.com/ihs-ustutt/dtOO-ThirdParty.git
@@ -9,35 +14,28 @@ ARG GIT_REV=main
 RUN git checkout ${GIT_REV}
 WORKDIR /
 
-FROM ubuntu:24.04 AS base
-ARG CBASE=
-COPY --from=repo /dtOO-ThirdParty${CBASE} /dtOO-ThirdParty
+FROM ${CONTAINER_REPO}repo${CONTAINER_TAG} AS repo_d
+
+FROM ubuntu:24.04 AS prebase
+ARG CBASE
+COPY --from=repo_d /dtOO-ThirdParty${CBASE} /dtOO-ThirdParty
 
 RUN apt-get update
 RUN apt-get install -y \
   ssh git \
   cmake make automake autogen autoconf libtool patch \
   build-essential ccache \
-  swig \
   libblas-dev liblapack-dev libeigen3-dev gfortran \
   curl \
-  python3 python3-dev python3-numpy python3-venv python3-pip \
+  python3 python3-dev python3-venv python3-pip \
   qtbase5-dev nlohmann-json3-dev \
   libboost-filesystem-dev libboost-program-options-dev libboost-regex-dev \
   libboost-thread-dev libboost-timer-dev \
   libmuparser-dev \
   libgsl-dev \
-  software-properties-common
-
-RUN add-apt-repository -y ppa:bleedingedge/noble-bleed
-RUN apt-get update
-RUN apt-get install -y \
-  libocct-data-exchange-dev libocct-draw-dev libocct-foundation-dev \
-  libocct-modeling-algorithms-dev \
-  libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev \
-  libocct-data-exchange-7.8 libocct-draw-7.8 libocct-foundation-7.8 \
-  libocct-modeling-algorithms-7.8 libocct-modeling-data-7.8 libocct-ocaf-7.8 \
-  libocct-visualization-7.8
+  software-properties-common \
+  libfreetype-dev tk-dev tcl-dev \
+  rapidjson-dev
 
 RUN \
   echo "deb [arch=amd64] https://dl.openfoam.com/repos/deb noble main" \
@@ -55,16 +53,68 @@ ENV CC=/usr/bin/gcc
 ENV CXX=/usr/bin/g++
 ENV FC=/usr/bin/gfortran
 
-RUN git clone https://github.com/ihs-ustutt/foamFine.git
+ENV PATH=/root/.local/bin:$PATH
+RUN python3 -m venv ~/dtoo-py 
+RUN echo "source ~/dtoo-py/bin/activate" >> /root/.profile
+RUN echo "source ~/dtoo-py/bin/activate" >> /root/.bashrc
+RUN . ~/dtoo-py/bin/activate && pip install numpy==2.3.5
+RUN . ~/dtoo-py/bin/activate && pip install foamlib
+RUN . ~/dtoo-py/bin/activate && pip install oslo.concurrency 
+RUN . ~/dtoo-py/bin/activate && pip install scikit-learn
+RUN . ~/dtoo-py/bin/activate && pip install swig==4.3.0
 
-WORKDIR /dtOO-ThirdParty
 ENV DTOO_EXTERNLIBS=/dtOO-install
-ARG NCPU=2
+RUN mkdir ${DTOO_EXTERNLIBS}
+WORKDIR /dtOO-ThirdParty
+
+#-cgns
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-cgns
+ARG NCPU
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o cgns -tee
-RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openmesh -tee
-RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openvolumemesh -tee
-RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o gmsh -tee
+#-moab
+FROM ${CONTAINER_REPO}base-cgns${CONTAINER_TAG} AS base-moab
+ARG NCPU
 RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o moab -tee
+#-openmesh
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-openmesh
+ARG NCPU
+RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openmesh -tee
+#-openvolumemesh
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-openvolumemesh
+ARG NCPU
+RUN bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o openvolumemesh -tee
+#-gmsh
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-gmsh
+ARG NCPU
+RUN . ~/dtoo-py/bin/activate && bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o gmsh -tee
+#-occt
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base-occt
+ARG NCPU
+RUN . ~/dtoo-py/bin/activate && bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o occt -tee
+#-pythonocc-core
+FROM ${CONTAINER_REPO}base-occt${CONTAINER_TAG} AS base-pythonocc-core
+ARG NCPU
+RUN . ~/dtoo-py/bin/activate && bash buildDep -i ${DTOO_EXTERNLIBS} -n ${NCPU} -o pythonocc-core -tee
+
+FROM ${CONTAINER_REPO}base-cgns${CONTAINER_TAG} AS base-cgns_d
+FROM ${CONTAINER_REPO}base-openmesh${CONTAINER_TAG} AS base-openmesh_d
+FROM ${CONTAINER_REPO}base-openvolumemesh${CONTAINER_TAG} AS base-openvolumemesh_d
+FROM ${CONTAINER_REPO}base-gmsh${CONTAINER_TAG} AS base-gmsh_d
+FROM ${CONTAINER_REPO}base-moab${CONTAINER_TAG} AS base-moab_d
+FROM ${CONTAINER_REPO}base-occt${CONTAINER_TAG} AS base-occt_d
+FROM ${CONTAINER_REPO}base-pythonocc-core${CONTAINER_TAG} AS base-pythonocc-core_d
+
+FROM ${CONTAINER_REPO}prebase${CONTAINER_TAG} AS base
+COPY --from=base-cgns_d           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-openmesh_d       ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-openvolumemesh_d ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-gmsh_d           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-moab_d           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-occt_d           ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+COPY --from=base-pythonocc-core_d ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
+
+WORKDIR /
+RUN git clone https://github.com/ihs-ustutt/foamFine.git
 WORKDIR /foamFine/of
 RUN . /usr/lib/openfoam/openfoam2406/etc/bashrc && wmake all
 RUN ln -s /root/OpenFOAM/user-2406 /root/OpenFOAM/root-2406
@@ -73,16 +123,8 @@ RUN echo "source /usr/lib/openfoam/openfoam2406/etc/bashrc" >> /root/.profile
 RUN echo "source /usr/lib/openfoam/openfoam2406/etc/bashrc" >> /root/.bashrc
 ENV FOAMFINE_DIR=/foamFine
 
-ENV PATH=/root/.local/bin:$PATH
-
-RUN python3 -m venv ~/dtoo-py 
-RUN echo "source ~/dtoo-py/bin/activate" >> /root/.profile
-RUN echo "source ~/dtoo-py/bin/activate" >> /root/.bashrc
-RUN . ~/dtoo-py/bin/activate && pip install foamlib
-RUN . ~/dtoo-py/bin/activate && pip install oslo.concurrency 
-RUN . ~/dtoo-py/bin/activate && pip install scikit-learn
-
 ENV PATH=/dtOO-install/bin:$PATH
 
 FROM base AS base-prod
-RUN rm -rf /dtOO-ThirdParty/ThirdParty/*
+#RUN rm -rf /dtOO-ThirdParty/ThirdParty/*
+WORKDIR /

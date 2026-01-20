@@ -57,8 +57,10 @@ output_exit_on_error () {
       || error "Failed: Please check ${_log_file}"
     dbg "\n\n[ ... ]\n\n$(tail ${_log_file})"
   else
+    set -o pipefail
     $_fun_call $@ | tee $_log_file 2>&1 \
       || error "  !\n  !\n  ! Failed: Please check ${_log_file}\n  !\n  !"
+    set +o pipefail
   fi
 }
 
@@ -68,6 +70,7 @@ git_cmake_build() {
   local _checkoutCommand=$3
   local _cmakeConf=$4
   local _addGitCommand="${5}"
+  local _addPostCommand="${6}"
 
   [[ "$_listDep" == 1 ]] && output "$_name -> ${_name}@<CMAKE-OPTION>" && return
   
@@ -79,9 +82,15 @@ git_cmake_build() {
     info "( G ) _skipDownload    : $_skipDownload"
     info "( G ) _extraCmake      : ${_extraCmake[$_name]}"
     info "( L ) _checkoutCommand : $_checkoutCommand"
+    info "( G ) _gitCheckout     : ${_gitCheckout[$_name]}"
     info "( L ) _cmakeConf       : $_cmakeConf"
     info "( L ) _addGitCommand   : $_addGitCommand"
+    info "( L ) _addPostCommand  : $_addPostCommand"
   
+    if [ ! -z "${_gitCheckout[$_name]}" ]; then
+      _checkoutCommand="${_gitCheckout[$_name]}"
+      dbg "Reset variable _checkoutCommand : $_checkoutCommand" 
+    fi
    
     if [[ "$_testRun" == 0 ]]; then
       # create log file
@@ -122,7 +131,11 @@ git_cmake_build() {
       fi
       cd ${_pwd}/build_$_name
       output_exit_on_error ${_logFile} \
-        make -j${_nProcs} install 
+        make -j${_nProcs} install
+        if [ ! -z "$_addPostCommand" ]; then
+          output_exit_on_error ${_logFile} \
+            eval "$_addPostCommand"
+        fi
     else
       info "  ->"
       info "  -> Test run"
@@ -264,6 +277,7 @@ _listDep=0
 _debug=false
 declare -A _extraCmake
 _tee=false
+declare -A _gitCheckout
 
 # no input given 
 [ $# -eq 0 ] && usage
@@ -279,7 +293,7 @@ args=$(\
     --long \
       help,skipBuild,skipDownload,testRun,listDep \
     --long \
-      installPrefix:,nProcs:,dep:,extra-cmake: \
+      installPrefix:,nProcs:,dep:,extra-cmake:,git-checkout: \
     --long \
       debug,tee \
     -- "$@"\
@@ -334,6 +348,25 @@ do
       ##      > --extra-cmake=pythonocc-core@-DPython_EXECUTABLE=/usr/bin/python3.11
       ##    
       ##    sets an extra make option for occt and pythonocc-core.
+    --git-checkout) \
+      __key=`echo $2 | sed 's/@.*$//g'` \
+      && \
+      __val=`echo $2 | sed 's/^.*@//g'` \
+      ; \
+      shift 2 \
+      ; \
+      _gitCheckout[${__key}]=${__val} ;;
+      ##  --git-checkout input
+      ##    Define git checkout string. The "@" sign is used as delimiter. A 
+      ##    call to this script by
+      ##      
+      ##      > sh buildDep \
+      ##      > -o all \
+      ##      > ...
+      ##      > --git-checkout=occt@V7_9_0 \
+      ##    
+      ##    switchs to branch V7_9_0 of occt and not the default one given 
+      ##    below in this script.
     --debug) _debug=true 
       warn "If you would like to debug as much as possible, then the debug option has to be the first one."
       shift
@@ -449,8 +482,8 @@ git_cmake_build \
 #-------------------------------------------------------------------------------
 git_cmake_build \
   "occt" \
-  "https://git.dev.opencascade.org/repos/occt.git" \
-  "V7_8_1" \
+  "https://github.com/Open-Cascade-SAS/OCCT" \
+  "V7_9_0" \
   "\
     -DINSTALL_DIR=${_installPrefix} \
     -DBUILD_RELEASE_DISABLE_EXCEPTIONS=FALSE \
@@ -462,11 +495,22 @@ git_cmake_build \
 git_cmake_build \
   "pythonocc-core" \
   "https://github.com/tpaviot/pythonocc-core.git" \
-  "7.8.1" \
+  "7.9.0" \
   "\
     -DOCCT_INCLUDE_DIR=${_installPrefix}/include/opencascade \
     -DOCCT_LIBRARY_DIR=${_installPrefix}/lib \
     -DPYTHONOCC_INSTALL_DIRECTORY=${_installPrefix}/tools/OCC \
+    -DPYTHONOCC_MESHDS_NUMPY=ON \
+  "\
+  ""\
+  "\
+    mkdir \
+      -p ${_installPrefix}/include/pythonocc-core \
+    && \
+    cp \
+      -r  \
+      ${_pwd}/pythonocc-core/src/SWIG_files \
+      ${_installPrefix}/include/pythonocc-core/SWIG_files\
   "
 
 #-------------------------------------------------------------------------------
@@ -476,7 +520,7 @@ export CASROOT=${_installPrefix}
 git_cmake_build \
   "gmsh" \
   "https://gitlab.onelab.info/gmsh/gmsh.git" \
-  "gmsh_4_14_0" \
+  "gmsh_4_15_0" \
   "\
   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   -DENABLE_BUILD_SHARED=ON \
@@ -500,7 +544,7 @@ git_cmake_build \
   -DENABLE_OCC_CAF=OFF \
   -DENABLE_QUADTRI=OFF \
   -DENABLE_QUADMESHINGTOOLS=OFF \
-  -DENABLE_WINSLOWUNTANGLER=OFF \
+  -DENABLE_WINSLOWUNTANGLER=ON \
   -DBUILD_TESTING=OFF \
   -DENABLE_WRAP_PYTHON=ON \
   -DGMSHPY_INSTALL_DIRECTORY=${_installPrefix}/tools/gmshpy \
