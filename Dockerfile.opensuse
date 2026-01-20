@@ -58,7 +58,7 @@ ENV CC=/usr/bin/gcc-12
 ENV CXX=/usr/bin/g++-12
 ENV FC=/usr/bin/gfortran-12
 
-RUN pip3.12 install numpy
+RUN pip3.12 install numpy==2.3.5
 RUN pip3.12 install foamlib
 RUN pip3.12 install oslo.concurrency 
 RUN pip3.12 install scikit-learn
