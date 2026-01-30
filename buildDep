@@ -488,7 +488,18 @@ git_cmake_build \
     -DINSTALL_DIR=${_installPrefix} \
     -DBUILD_RELEASE_DISABLE_EXCEPTIONS=FALSE \
   "
-  
+
+#-------------------------------------------------------------------------------
+# rapidjson
+#-------------------------------------------------------------------------------
+git_cmake_build \
+  "rapidjson" \
+  "https://github.com/Tencent/rapidjson.git"\
+  "" \
+  "\
+    -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
+  "
+
 #-------------------------------------------------------------------------------
 # pythonocc-core
 #-------------------------------------------------------------------------------
