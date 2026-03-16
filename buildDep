@@ -430,7 +430,7 @@ git_cmake_build \
 git_cmake_build \
   "occt" \
   "https://github.com/Open-Cascade-SAS/OCCT" \
-  "V7_9_0" \
+  "V7_9_3" \
   "\
     -DINSTALL_DIR=${_installPrefix} \
     -DBUILD_RELEASE_DISABLE_EXCEPTIONS=FALSE \
@@ -453,7 +453,7 @@ git_cmake_build \
 git_cmake_build \
   "pythonocc-core" \
   "https://github.com/tpaviot/pythonocc-core.git" \
-  "7.9.0" \
+  "7.9.3" \
   "\
     -DOCCT_INCLUDE_DIR=${_installPrefix}/include/opencascade \
     -DOCCT_LIBRARY_DIR=${_installPrefix}/lib \
@@ -478,7 +478,7 @@ export CASROOT=${_installPrefix}
 git_cmake_build \
   "gmsh" \
   "https://gitlab.onelab.info/gmsh/gmsh.git" \
-  "gmsh_4_15_0" \
+  "gmsh_4_15_1" \
   "\
   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   -DENABLE_BUILD_SHARED=ON \
