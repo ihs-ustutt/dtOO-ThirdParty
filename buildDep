@@ -282,7 +282,9 @@ do
       ; \
       shift 2 \
       ; \
-      _extraCmake[${__key}]=${__val} ;;
+      dbg "Option ${__val} for ${__key} / => ${_extraCmake[${__key}]}" \
+      ; \
+      _extraCmake[${__key}]="${_extraCmake[${__key}]} ${__val}" ;;
       ##  --extra-cmake input
       ##    Define additional cmake configure string. You can give multiple
       ##    --extra-cmake options. The "@" sign is used as delimiter. A call to
