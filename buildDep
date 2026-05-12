@@ -567,7 +567,7 @@ git_cmake_build \
 git_cmake_build \
   "paraview" \
   "https://github.com/Kitware/ParaView.git" \
-  "v5.13.2" \
+  "v6.1.0" \
   "\
   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   -DPARAVIEW_USE_QTHELP=OFF \
@@ -575,5 +575,19 @@ git_cmake_build \
   -DPARAVIEW_ENABLE_EMBEDDED_DOCUMENTATION=OFF \
   " \
   "git submodule update --init --recursive"
+
+#-------------------------------------------------------------------------------
+# nektar 
+#-------------------------------------------------------------------------------
+git_cmake_build \
+  "nektar" \
+  "https://gitlab.nektar.info/nektar/nektar.git" \
+  "" \
+  "\
+    -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
+    -DOpenCASCADE_DIR=${_installPrefix}/lib/cmake/opencascade \
+    -DNEKTAR_USE_MESHGEN=ON \
+    -DNEKTAR_UTILITY_NEKMESH=ON \
+  "
 
 exit 0

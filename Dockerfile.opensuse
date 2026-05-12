@@ -16,36 +16,29 @@ WORKDIR /
 
 FROM ${CONTAINER_REPO}repo${CONTAINER_TAG} AS repo_d
 
-FROM opensuse/leap:15.6 AS prebase
+FROM opensuse/leap:16.0 AS prebase
 ARG CBASE
 COPY --from=repo /dtOO-ThirdParty${CBASE} /dtOO-ThirdParty
 
 RUN zypper --non-interactive \
   addrepo \
-  https://download.opensuse.org/repositories/science/15.6/science.repo
-RUN zypper --non-interactive \
-  addrepo \
-  https://download.opensuse.org/repositories/devel:tools:building/15.6/devel:tools:building.repo
-RUN zypper --non-interactive \
-  addrepo \
-  https://download.opensuse.org/repositories/devel:libraries:c_c++/15.6/devel:libraries:c_c++.repo
+  https://download.opensuse.org/repositories/science/16.0/science.repo
 RUN zypper --gpg-auto-import-keys refresh
 
 RUN zypper -n install \
   openssh git \ 
   cmake make automake cmake-gui autogen autoconf libtool patch \
   libQt5Core-devel libQt5Xml-devel \
-  gsl-devel libboost_system1_66_0-devel libboost_timer1_66_0-devel \
-  libboost_filesystem1_66_0-devel libboost_program_options1_66_0-devel \
-  libboost_regex1_66_0-devel libboost_thread1_66_0-devel \
+  gsl-devel libboost_system-devel libboost_timer-devel \
+  libboost_filesystem-devel libboost_program_options-devel \
+  libboost_regex-devel libboost_thread-devel \
   gzip \
   freetype2-devel tk-devel Mesa-libGL-devel fontconfig-devel \
   libXext-devel libXmu-devel libXi-devel \
-  python312 python312-devel \
-  python312-pip  \
-  python python-devel \
+  python313 python313-devel \
+  python313-pip  \
   vim \
-  gcc12-fortran gcc12-c++ gcc12 ccache \
+  gcc-fortran gcc-c++ gcc ccache \
   gmp-devel \
   muparser-devel \
   cgal-devel \
@@ -54,15 +47,11 @@ RUN zypper -n install \
   openfoam2406-tutorials \
   nlohmann_json-devel rapidjson-devel
 
-ENV CC=/usr/bin/gcc-12
-ENV CXX=/usr/bin/g++-12
-ENV FC=/usr/bin/gfortran-12
-
-RUN pip3.12 install numpy==2.3.5
-RUN pip3.12 install foamlib
-RUN pip3.12 install oslo.concurrency 
-RUN pip3.12 install scikit-learn
-RUN pip3.12 install swig==4.3.0
+RUN pip3.13 install numpy==2.3.5
+RUN pip3.13 install foamlib
+RUN pip3.13 install oslo.concurrency 
+RUN pip3.13 install scikit-learn
+RUN pip3.13 install swig==4.3.0
 
 
 ENV DTOO_EXTERNLIBS=/dtOO-install
