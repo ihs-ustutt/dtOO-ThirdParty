@@ -418,12 +418,12 @@ git_cmake_build \
 #-------------------------------------------------------------------------------
 git_cmake_build \
   "openvolumemesh" \
-  "https://github.com/nTopology/OpenVolumeMesh.git" \
-  "" \
+  "https://gitlab.vci.rwth-aachen.de:9000/OpenVolumeMesh/OpenVolumeMesh.git" \
+  "v3.4.1" \
   "\
   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  -DBUILD_SHARED_LIBS=ON \
   "
   
 #-------------------------------------------------------------------------------
