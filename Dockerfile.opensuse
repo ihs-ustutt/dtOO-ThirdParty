@@ -42,9 +42,9 @@ RUN zypper -n install \
   gmp-devel \
   muparser-devel \
   cgal-devel \
-  openfoam2406 openfoam2406-common openfoam2406-default \
-  openfoam2406-devel openfoam2406-doc openfoam2406-tools \
-  openfoam2406-tutorials \
+  openfoam2606 openfoam2606-common openfoam2606-default \
+  openfoam2606-devel openfoam2606-doc openfoam2606-tools \
+  openfoam2606-tutorials \
   nlohmann_json-devel rapidjson-devel
 
 RUN pip3.13 install numpy==2.3.5
@@ -107,11 +107,11 @@ COPY --from=base-pythonocc-core_d ${DTOO_EXTERNLIBS} ${DTOO_EXTERNLIBS}
 WORKDIR /
 RUN git clone https://github.com/ihs-ustutt/foamFine.git
 WORKDIR /foamFine/of
-RUN . /usr/lib/openfoam/openfoam2406/etc/bashrc && wmake all
-RUN ln -s /root/OpenFOAM/user-2406 /root/OpenFOAM/root-2406
+RUN . /usr/lib/openfoam/openfoam2606/etc/bashrc && wmake all
+RUN ln -s /root/OpenFOAM/user-2606 /root/OpenFOAM/root-2606
 
 RUN touch /root/.bashrc
-RUN echo "source /usr/lib/openfoam/openfoam2406/etc/bashrc" >> /root/.bashrc
+RUN echo "source /usr/lib/openfoam/openfoam2606/etc/bashrc" >> /root/.bashrc
 ENV FOAMFINE_DIR=/foamFine
 
 ENV PATH=/dtOO-install/bin:$PATH
