@@ -444,7 +444,7 @@ git_cmake_build \
 git_cmake_build \
   "rapidjson" \
   "https://github.com/Tencent/rapidjson.git"\
-  "" \
+  "24b5e7a" \
   "\
     -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   "
@@ -545,7 +545,7 @@ git_cmake_build \
 git_cmake_build \
   "muparser" \
   "https://github.com/beltoforion/muparser" \
-  "" \
+  "v2.3.5" \
   "-DCMAKE_INSTALL_PREFIX=${_installPrefix}"
 
 #-------------------------------------------------------------------------------
