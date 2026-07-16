@@ -418,12 +418,12 @@ git_cmake_build \
 #-------------------------------------------------------------------------------
 git_cmake_build \
   "openvolumemesh" \
-  "https://github.com/nTopology/OpenVolumeMesh.git" \
-  "" \
+  "https://gitlab.vci.rwth-aachen.de:9000/OpenVolumeMesh/OpenVolumeMesh.git" \
+  "v3.4.1" \
   "\
   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  -DBUILD_SHARED_LIBS=ON \
   "
   
 #-------------------------------------------------------------------------------
@@ -444,7 +444,7 @@ git_cmake_build \
 git_cmake_build \
   "rapidjson" \
   "https://github.com/Tencent/rapidjson.git"\
-  "" \
+  "24b5e7a" \
   "\
     -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   "
@@ -545,7 +545,7 @@ git_cmake_build \
 git_cmake_build \
   "muparser" \
   "https://github.com/beltoforion/muparser" \
-  "" \
+  "v2.3.5" \
   "-DCMAKE_INSTALL_PREFIX=${_installPrefix}"
 
 #-------------------------------------------------------------------------------
@@ -567,7 +567,7 @@ git_cmake_build \
 git_cmake_build \
   "paraview" \
   "https://github.com/Kitware/ParaView.git" \
-  "v5.13.2" \
+  "v6.1.0" \
   "\
   -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
   -DPARAVIEW_USE_QTHELP=OFF \
@@ -575,5 +575,19 @@ git_cmake_build \
   -DPARAVIEW_ENABLE_EMBEDDED_DOCUMENTATION=OFF \
   " \
   "git submodule update --init --recursive"
+
+#-------------------------------------------------------------------------------
+# nektar 
+#-------------------------------------------------------------------------------
+git_cmake_build \
+  "nektar" \
+  "https://gitlab.nektar.info/nektar/nektar.git" \
+  "" \
+  "\
+    -DCMAKE_INSTALL_PREFIX=${_installPrefix} \
+    -DOpenCASCADE_DIR=${_installPrefix}/lib/cmake/opencascade \
+    -DNEKTAR_USE_MESHGEN=ON \
+    -DNEKTAR_UTILITY_NEKMESH=ON \
+  "
 
 exit 0
