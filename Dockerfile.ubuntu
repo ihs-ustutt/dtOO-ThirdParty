@@ -65,6 +65,7 @@ RUN . ~/dtoo-py/bin/activate && pip install foamlib
 RUN . ~/dtoo-py/bin/activate && pip install oslo.concurrency 
 RUN . ~/dtoo-py/bin/activate && pip install scikit-learn
 RUN . ~/dtoo-py/bin/activate && pip install swig==4.3.0
+RUN . ~/dtoo-py/bin/activate && pip install meshio
 
 ENV DTOO_EXTERNLIBS=/dtOO-install
 RUN mkdir ${DTOO_EXTERNLIBS}
