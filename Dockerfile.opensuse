@@ -52,6 +52,7 @@ RUN pip3.13 install foamlib
 RUN pip3.13 install oslo.concurrency 
 RUN pip3.13 install scikit-learn
 RUN pip3.13 install swig==4.3.0
+RUN pip3.13 install meshio
 
 
 ENV DTOO_EXTERNLIBS=/dtOO-install
