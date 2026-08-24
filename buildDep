@@ -588,6 +588,7 @@ git_cmake_build \
     -DOpenCASCADE_DIR=${_installPrefix}/lib/cmake/opencascade \
     -DNEKTAR_USE_MESHGEN=ON \
     -DNEKTAR_UTILITY_NEKMESH=ON \
+    -DNEKTAR_USE_SCOTCH=OFF \
   "
 
 exit 0
