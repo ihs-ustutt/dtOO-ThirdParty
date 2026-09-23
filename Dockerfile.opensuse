@@ -31,7 +31,7 @@ RUN zypper -n install \
   libQt5Core-devel libQt5Xml-devel \
   gsl-devel libboost_system-devel libboost_timer-devel \
   libboost_filesystem-devel libboost_program_options-devel \
-  libboost_regex-devel libboost_thread-devel \
+  libboost_regex-devel libboost_thread-devel libboost_log-devel \
   gzip \
   freetype2-devel tk-devel Mesa-libGL-devel fontconfig-devel \
   libXext-devel libXmu-devel libXi-devel \
